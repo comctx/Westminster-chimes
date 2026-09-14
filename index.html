@@ -26,7 +26,7 @@
 
     .clock {
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       padding: 32px 24px;
       text-align: center;
       border: 3px solid #d4af37;
@@ -43,13 +43,13 @@
     }
 
     .subtitle {
-      margin-bottom: 22px;
+      margin-bottom: 20px;
       color: #c9d4e5;
       font-size: 17px;
     }
 
     .bell {
-      margin: 12px 0;
+      margin: 10px 0;
       font-size: 76px;
       filter: drop-shadow(0 5px 8px rgba(212, 175, 55, 0.35));
     }
@@ -62,9 +62,36 @@
     }
 
     #date {
-      margin-bottom: 26px;
+      margin-bottom: 24px;
       color: #d6deea;
       font-size: 20px;
+    }
+
+    .sound-box {
+      margin: 16px 0;
+      padding: 16px;
+      border: 1px solid #596982;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 9px;
+      color: #e4eaf3;
+      font-weight: bold;
+    }
+
+    select {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px;
+      border: 2px solid #d4af37;
+      border-radius: 10px;
+      color: #172238;
+      background: white;
+      font-size: 17px;
+      font-weight: bold;
     }
 
     #status {
@@ -118,11 +145,6 @@
       border-top: 1px solid #4b5870;
     }
 
-    label {
-      display: block;
-      margin-bottom: 10px;
-    }
-
     input[type="range"] {
       width: 100%;
     }
@@ -151,7 +173,7 @@
     <h1>Westminster Chimes</h1>
 
     <div class="subtitle">
-      Deep traditional tower bells
+      Traditional clock and tower bells
     </div>
 
     <div class="bell">🔔</div>
@@ -159,11 +181,25 @@
     <div id="time">--:--:--</div>
     <div id="date">Loading date…</div>
 
+    <div class="sound-box">
+      <label for="soundChoice">Choose a chime sound</label>
+
+      <select id="soundChoice">
+        <option value="westminster">
+          Westminster Tower Bells
+        </option>
+
+        <option value="bigben">
+          Big Ben — London
+        </option>
+      </select>
+    </div>
+
     <div id="status">Press Start Chimes to begin.</div>
 
     <div class="buttons">
       <button id="startButton">Start Chimes</button>
-      <button id="testButton">Test Westminster</button>
+      <button id="testButton">Test Selected Chime</button>
       <button id="stopButton">Stop Chimes</button>
       <button id="muteButton">Mute</button>
     </div>
@@ -177,8 +213,9 @@
     </div>
 
     <div class="note">
-      Keep this page open and press Start Chimes once.
-      Chimes play every 15 minutes, with hour strikes on the hour.
+      Select a sound, then press Test Selected Chime.
+      Keep this page open and press Start Chimes once for
+      automatic quarter-hour chimes.
     </div>
   </main>
 
@@ -187,6 +224,7 @@
     const dateDisplay = document.getElementById("date");
     const statusDisplay = document.getElementById("status");
 
+    const soundChoice = document.getElementById("soundChoice");
     const startButton = document.getElementById("startButton");
     const testButton = document.getElementById("testButton");
     const stopButton = document.getElementById("stopButton");
@@ -208,10 +246,6 @@
       GS4: 415.30,
       E3: 164.81
     };
-
-    /*
-      Traditional Westminster quarter-hour melody.
-    */
 
     const firstQuarter = [
       ["GS4", 0.00],
@@ -295,103 +329,113 @@
       );
     }
 
-    /*
-      Builds a deeper bell using several harmonics.
-      Each harmonic fades at a different speed.
-    */
+    function getBellSettings(style, hourBell) {
+      if (style === "bigben") {
+        if (hourBell) {
+          return {
+            pitch: 0.79,
+            duration: 8.2,
+            harmonics: [
+              [0.50, 0.50, 1.00],
+              [1.00, 0.62, 1.00],
+              [1.47, 0.24, 0.82],
+              [2.00, 0.18, 0.67],
+              [2.63, 0.12, 0.52],
+              [3.52, 0.07, 0.38],
+              [4.11, 0.04, 0.27]
+            ]
+          };
+        }
 
-    function playTowerBell(frequency, delay, duration = 4.8) {
-      if (!audioContext || muted) {
-        return;
+        return {
+          pitch: 0.88,
+          duration: 6.2,
+          harmonics: [
+            [0.50, 0.37, 1.00],
+            [1.00, 0.54, 1.00],
+            [1.49, 0.22, 0.82],
+            [2.00, 0.17, 0.67],
+            [2.71, 0.11, 0.51],
+            [3.68, 0.06, 0.36]
+          ]
+        };
       }
 
-      const start = audioContext.currentTime + delay;
+      if (hourBell) {
+        return {
+          pitch: 1.00,
+          duration: 6.5,
+          harmonics: [
+            [0.50, 0.42, 1.00],
+            [1.00, 0.55, 1.00],
+            [1.48, 0.19, 0.78],
+            [2.00, 0.15, 0.60],
+            [2.66, 0.09, 0.45],
+            [3.55, 0.05, 0.32]
+          ]
+        };
+      }
 
-      const harmonics = [
-        { ratio: 0.50, amount: 0.30, fade: 1.00 },
-        { ratio: 1.00, amount: 0.48, fade: 1.00 },
-        { ratio: 1.50, amount: 0.18, fade: 0.78 },
-        { ratio: 2.00, amount: 0.14, fade: 0.62 },
-        { ratio: 2.74, amount: 0.09, fade: 0.48 },
-        { ratio: 3.76, amount: 0.05, fade: 0.35 }
-      ];
-
-      harmonics.forEach(harmonic => {
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-
-        oscillator.type = "sine";
-
-        oscillator.frequency.setValueAtTime(
-          frequency * harmonic.ratio,
-          start
-        );
-
-        gain.gain.setValueAtTime(0.0001, start);
-
-        gain.gain.exponentialRampToValueAtTime(
-          Math.max(0.001, harmonic.amount),
-          start + 0.025
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          start + duration * harmonic.fade
-        );
-
-        oscillator.connect(gain);
-        gain.connect(masterGain);
-
-        oscillator.start(start);
-        oscillator.stop(start + duration + 0.15);
-      });
+      return {
+        pitch: 1.00,
+        duration: 4.8,
+        harmonics: [
+          [0.50, 0.30, 1.00],
+          [1.00, 0.48, 1.00],
+          [1.50, 0.18, 0.78],
+          [2.00, 0.14, 0.62],
+          [2.74, 0.09, 0.48],
+          [3.76, 0.05, 0.35]
+        ]
+      };
     }
 
-    function playHourBell(delay) {
+    function playBell(frequency, delay, hourBell = false) {
       if (!audioContext || muted) {
         return;
       }
 
+      const style = soundChoice.value;
+      const settings = getBellSettings(style, hourBell);
       const start = audioContext.currentTime + delay;
-      const frequency = notes.E3;
 
-      const harmonics = [
-        { ratio: 0.50, amount: 0.42, fade: 1.00 },
-        { ratio: 1.00, amount: 0.55, fade: 1.00 },
-        { ratio: 1.48, amount: 0.19, fade: 0.78 },
-        { ratio: 2.00, amount: 0.15, fade: 0.60 },
-        { ratio: 2.66, amount: 0.09, fade: 0.45 },
-        { ratio: 3.55, amount: 0.05, fade: 0.32 }
-      ];
+      settings.harmonics.forEach(harmonic => {
+        const ratio = harmonic[0];
+        const amount = harmonic[1];
+        const fade = harmonic[2];
 
-      harmonics.forEach(harmonic => {
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
 
         oscillator.type = "sine";
 
         oscillator.frequency.setValueAtTime(
-          frequency * harmonic.ratio,
+          frequency * settings.pitch * ratio,
+          start
+        );
+
+        oscillator.detune.setValueAtTime(
+          style === "bigben" ? -4 : 0,
           start
         );
 
         gain.gain.setValueAtTime(0.0001, start);
 
         gain.gain.exponentialRampToValueAtTime(
-          Math.max(0.001, harmonic.amount),
-          start + 0.035
+          Math.max(0.001, amount),
+          start + 0.03
         );
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          start + 6.5 * harmonic.fade
+          start + settings.duration * fade
         );
 
         oscillator.connect(gain);
         gain.connect(masterGain);
 
         oscillator.start(start);
-        oscillator.stop(start + 6.7);
+        oscillator.stop(start + settings.duration + 0.2);
       });
     }
 
@@ -399,7 +443,7 @@
       prepareAudio();
 
       sequence.forEach(([note, delay]) => {
-        playTowerBell(notes[note], delay);
+        playBell(notes[note], delay, false);
       });
     }
 
@@ -410,8 +454,11 @@
         strikes = 12;
       }
 
+      const spacing =
+        soundChoice.value === "bigben" ? 3.8 : 3.15;
+
       for (let i = 0; i < strikes; i++) {
-        playHourBell(delay + i * 3.15);
+        playBell(notes.E3, delay + i * spacing, true);
       }
     }
 
@@ -422,28 +469,28 @@
 
       if (minutes === 15) {
         statusDisplay.textContent =
-          "Playing the quarter-hour Westminster chime.";
+          "Playing the quarter-hour chime.";
 
         playSequence(firstQuarter);
       }
 
       if (minutes === 30) {
         statusDisplay.textContent =
-          "Playing the half-hour Westminster chime.";
+          "Playing the half-hour chime.";
 
         playSequence(secondQuarter);
       }
 
       if (minutes === 45) {
         statusDisplay.textContent =
-          "Playing the three-quarter-hour Westminster chime.";
+          "Playing the three-quarter-hour chime.";
 
         playSequence(thirdQuarter);
       }
 
       if (minutes === 0) {
         statusDisplay.textContent =
-          "Playing the full Westminster chime and hour strikes.";
+          "Playing the full chime and hour strikes.";
 
         playSequence(fullHour);
         strikeHour(hour, 15.8);
@@ -458,11 +505,7 @@
       const minutes = now.getMinutes();
       const seconds = now.getSeconds();
 
-      if (![0, 15, 30, 45].includes(minutes)) {
-        return;
-      }
-
-      if (seconds > 1) {
+      if (![0, 15, 30, 45].includes(minutes) || seconds > 1) {
         return;
       }
 
@@ -512,8 +555,13 @@
         audioContext.currentTime
       );
 
+      const name =
+        soundChoice.value === "bigben"
+          ? "Big Ben"
+          : "Westminster Tower Bells";
+
       statusDisplay.textContent =
-        "Deep Westminster chimes are on.";
+        name + " chimes are on.";
     });
 
     testButton.addEventListener("click", () => {
@@ -527,11 +575,16 @@
         audioContext.currentTime
       );
 
+      const name =
+        soundChoice.value === "bigben"
+          ? "Big Ben"
+          : "Westminster Tower Bells";
+
       statusDisplay.textContent =
-        "Playing the full Westminster melody.";
+        "Playing " + name + ".";
 
       playSequence(fullHour);
-      playHourBell(15.8);
+      playBell(notes.E3, 15.8, true);
     });
 
     stopButton.addEventListener("click", () => {
@@ -555,6 +608,16 @@
       statusDisplay.textContent = muted
         ? "Sound is muted."
         : "Sound is unmuted.";
+    });
+
+    soundChoice.addEventListener("change", () => {
+      const name =
+        soundChoice.value === "bigben"
+          ? "Big Ben"
+          : "Westminster Tower Bells";
+
+      statusDisplay.textContent =
+        name + " selected. Press Test Selected Chime.";
     });
 
     volumeSlider.addEventListener("input", () => {
