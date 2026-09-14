@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Westminster Chimes</title>
 
   <style>
@@ -23,8 +19,7 @@
       padding: 20px;
       font-family: Arial, sans-serif;
       color: white;
-      background:
-        radial-gradient(circle at top, #355c7d, #17223b 60%, #090d18);
+      background: radial-gradient(circle at top, #355c7d, #17223b 60%, #090d18);
     }
 
     .clock {
@@ -53,7 +48,6 @@
 
     #time {
       margin: 10px 0;
-      color: white;
       font-size: clamp(48px, 13vw, 76px);
       font-weight: bold;
       letter-spacing: 2px;
@@ -88,6 +82,7 @@
       padding: 12px;
       border: none;
       border-radius: 12px;
+      color: white;
       font-size: 17px;
       font-weight: bold;
       cursor: pointer;
@@ -99,17 +94,14 @@
     }
 
     #testButton {
-      color: white;
       background: #276749;
     }
 
     #stopButton {
-      color: white;
       background: #9b2c2c;
     }
 
     #muteButton {
-      color: white;
       background: #35465f;
     }
 
@@ -178,13 +170,7 @@
         Volume: <span id="volumeValue">60</span>%
       </label>
 
-      <input
-        id="volume"
-        type="range"
-        min="0"
-        max="100"
-        value="60"
-      >
+      <input id="volume" type="range" min="0" max="100" value="60">
     </div>
 
     <div class="note">
@@ -215,9 +201,7 @@
       E4: 329.63,
       G4: 392.00,
       A4: 440.00,
-      B4: 493.88,
-      C5: 523.25,
-      E5: 659.25
+      B4: 493.88
     };
 
     const quarterOne = [
@@ -273,11 +257,7 @@
     ];
 
     function getVolume() {
-      if (muted) {
-        return 0;
-      }
-
-      return Number(volumeSlider.value) / 100;
+      return muted ? 0 : Number(volumeSlider.value) / 100;
     }
 
     function prepareAudio() {
@@ -299,7 +279,6 @@
       }
 
       const startTime = audioContext.currentTime + startDelay;
-
       const oscillator = audioContext.createOscillator();
       const gain = audioContext.createGain();
 
@@ -360,16 +339,12 @@
       }
 
       if (minutes === 45) {
-        statusDisplay.textContent =
-          "Playing three-quarter-hour chime.";
-
+        statusDisplay.textContent = "Playing three-quarter-hour chime.";
         playSequence(quarterThree);
       }
 
       if (minutes === 0) {
-        statusDisplay.textContent =
-          "Playing the hour chime.";
-
+        statusDisplay.textContent = "Playing the hour chime.";
         playSequence(fullHour);
         strikeHour(hour, 10.7);
       }
@@ -383,11 +358,7 @@
       const minutes = now.getMinutes();
       const seconds = now.getSeconds();
 
-      if (![0, 15, 30, 45].includes(minutes)) {
-        return;
-      }
-
-      if (seconds > 1) {
+      if (![0, 15, 30, 45].includes(minutes) || seconds > 1) {
         return;
       }
 
@@ -448,9 +419,7 @@
 
     stopButton.addEventListener("click", () => {
       chimesEnabled = false;
-
-      statusDisplay.textContent =
-        "Automatic chimes are stopped.";
+      statusDisplay.textContent = "Automatic chimes are stopped.";
     });
 
     muteButton.addEventListener("click", () => {
