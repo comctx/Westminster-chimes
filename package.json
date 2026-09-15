@@ -1,0 +1,17 @@
+{
+  "name": "westminster-chimes",
+  "version": "1.0.0",
+  "description": "Westminster Chimes mobile app",
+  "private": true,
+  "scripts": {
+    "sync": "npx cap sync ios",
+    "build": "npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
