@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Westminster Chimes</title>
+  <title>Clock Tower Chimes</title>
 
   <style>
     * {
@@ -170,10 +170,10 @@
 
 <body>
   <main class="clock">
-    <h1>Westminster Chimes</h1>
+    <h1>Clock Tower Chimes</h1>
 
     <div class="subtitle">
-      Traditional clock and tower bells
+      Traditional clock and tower melodies
     </div>
 
     <div class="bell">🔔</div>
@@ -182,7 +182,7 @@
     <div id="date">Loading date…</div>
 
     <div class="sound-box">
-      <label for="soundChoice">Choose a chime sound</label>
+      <label for="soundChoice">Choose a chime</label>
 
       <select id="soundChoice">
         <option value="westminster">
@@ -191,6 +191,10 @@
 
         <option value="bigben">
           Big Ben — London
+        </option>
+
+        <option value="whittington">
+          Whittington Chimes
         </option>
       </select>
     </div>
@@ -213,9 +217,8 @@
     </div>
 
     <div class="note">
-      Select a sound, then press Test Selected Chime.
-      Keep this page open and press Start Chimes once for
-      automatic quarter-hour chimes.
+      Select a melody and press Test Selected Chime.
+      Press Start Chimes once for automatic quarter-hour chimes.
     </div>
   </main>
 
@@ -239,7 +242,7 @@
     let muted = false;
     let lastChimeKey = "";
 
-    const notes = {
+    const westminsterNotes = {
       B3: 246.94,
       E4: 329.63,
       FS4: 369.99,
@@ -247,66 +250,119 @@
       E3: 164.81
     };
 
-    const firstQuarter = [
-      ["GS4", 0.00],
-      ["FS4", 0.82],
-      ["E4", 1.64],
-      ["B3", 2.46]
+    const westminster = {
+      15: [
+        ["GS4", 0.00], ["FS4", 0.82],
+        ["E4", 1.64], ["B3", 2.46]
+      ],
+
+      30: [
+        ["E4", 0.00], ["GS4", 0.82],
+        ["FS4", 1.64], ["B3", 2.46],
+
+        ["E4", 3.65], ["FS4", 4.47],
+        ["GS4", 5.29], ["E4", 6.11]
+      ],
+
+      45: [
+        ["GS4", 0.00], ["E4", 0.82],
+        ["FS4", 1.64], ["B3", 2.46],
+
+        ["B3", 3.65], ["FS4", 4.47],
+        ["GS4", 5.29], ["E4", 6.11],
+
+        ["GS4", 7.30], ["FS4", 8.12],
+        ["E4", 8.94], ["B3", 9.76]
+      ],
+
+      0: [
+        ["E4", 0.00], ["GS4", 0.82],
+        ["FS4", 1.64], ["B3", 2.46],
+
+        ["E4", 3.65], ["FS4", 4.47],
+        ["GS4", 5.29], ["E4", 6.11],
+
+        ["GS4", 7.30], ["E4", 8.12],
+        ["FS4", 8.94], ["B3", 9.76],
+
+        ["B3", 10.95], ["FS4", 11.77],
+        ["GS4", 12.59], ["E4", 13.41]
+      ]
+    };
+
+    const whittingtonNotes = {
+      D4: 293.66,
+      E4: 329.63,
+      FS4: 369.99,
+      G4: 392.00,
+      A4: 440.00,
+      B4: 493.88,
+      CS5: 554.37,
+      D5: 587.33,
+      D3: 146.83
+    };
+
+    const W1 = [
+      "D5", "CS5", "B4", "A4",
+      "G4", "FS4", "E4", "D4"
     ];
 
-    const secondQuarter = [
-      ["E4", 0.00],
-      ["GS4", 0.82],
-      ["FS4", 1.64],
-      ["B3", 2.46],
-
-      ["E4", 3.65],
-      ["FS4", 4.47],
-      ["GS4", 5.29],
-      ["E4", 6.11]
+    const W2A = [
+      "D5", "E4", "CS5", "FS4",
+      "B4", "G4", "A4", "D4"
     ];
 
-    const thirdQuarter = [
-      ["GS4", 0.00],
-      ["E4", 0.82],
-      ["FS4", 1.64],
-      ["B3", 2.46],
-
-      ["B3", 3.65],
-      ["FS4", 4.47],
-      ["GS4", 5.29],
-      ["E4", 6.11],
-
-      ["GS4", 7.30],
-      ["FS4", 8.12],
-      ["E4", 8.94],
-      ["B3", 9.76]
+    const W2B = [
+      "D5", "B4", "G4", "E4",
+      "CS5", "A4", "FS4", "D4"
     ];
 
-    const fullHour = [
-      ["E4", 0.00],
-      ["GS4", 0.82],
-      ["FS4", 1.64],
-      ["B3", 2.46],
-
-      ["E4", 3.65],
-      ["FS4", 4.47],
-      ["GS4", 5.29],
-      ["E4", 6.11],
-
-      ["GS4", 7.30],
-      ["E4", 8.12],
-      ["FS4", 8.94],
-      ["B3", 9.76],
-
-      ["B3", 10.95],
-      ["FS4", 11.77],
-      ["GS4", 12.59],
-      ["E4", 13.41]
+    const W3A = [
+      "D5", "CS5", "G4", "FS4",
+      "B4", "A4", "E4", "D4"
     ];
+
+    const W3B = [
+      "E4", "G4", "B4", "D5",
+      "A4", "E4", "FS4", "D4"
+    ];
+
+    function makeWhittingtonSequence(groups) {
+      const result = [];
+      let start = 0;
+
+      groups.forEach(group => {
+        group.forEach((note, index) => {
+          result.push([note, start + index * 0.56]);
+        });
+
+        start += 5.05;
+      });
+
+      return result;
+    }
+
+    const whittington = {
+      15: makeWhittingtonSequence([W1]),
+      30: makeWhittingtonSequence([W2A, W2B]),
+      45: makeWhittingtonSequence([W3A, W3B, W1]),
+      0: makeWhittingtonSequence([W2A, W2B, W3A, W3B])
+    };
 
     function getVolume() {
       return muted ? 0 : Number(volumeSlider.value) / 100;
+    }
+
+    function getSoundName() {
+      if (soundChoice.value === "bigben") {
+        return "Big Ben";
+      }
+
+      if (soundChoice.value === "whittington") {
+        return "Whittington Chimes";
+      }
+
+      return "Westminster Tower Bells";
     }
 
     function prepareAudio() {
@@ -329,59 +385,45 @@
       );
     }
 
-    function getBellSettings(style, hourBell) {
-      if (style === "bigben") {
-        if (hourBell) {
-          return {
-            pitch: 0.79,
-            duration: 8.2,
-            harmonics: [
-              [0.50, 0.50, 1.00],
-              [1.00, 0.62, 1.00],
-              [1.47, 0.24, 0.82],
-              [2.00, 0.18, 0.67],
-              [2.63, 0.12, 0.52],
-              [3.52, 0.07, 0.38],
-              [4.11, 0.04, 0.27]
-            ]
-          };
-        }
+    function getBellSettings(hourBell) {
+      const style = soundChoice.value;
 
+      if (style === "bigben") {
         return {
-          pitch: 0.88,
-          duration: 6.2,
+          pitch: hourBell ? 0.79 : 0.88,
+          duration: hourBell ? 8.2 : 6.2,
           harmonics: [
-            [0.50, 0.37, 1.00],
-            [1.00, 0.54, 1.00],
-            [1.49, 0.22, 0.82],
-            [2.00, 0.17, 0.67],
-            [2.71, 0.11, 0.51],
-            [3.68, 0.06, 0.36]
+            [0.50, 0.48, 1.00],
+            [1.00, 0.61, 1.00],
+            [1.48, 0.23, 0.82],
+            [2.00, 0.18, 0.67],
+            [2.68, 0.11, 0.50],
+            [3.58, 0.06, 0.36]
           ]
         };
       }
 
-      if (hourBell) {
+      if (style === "whittington") {
         return {
           pitch: 1.00,
-          duration: 6.5,
+          duration: hourBell ? 6.8 : 4.3,
           harmonics: [
-            [0.50, 0.42, 1.00],
-            [1.00, 0.55, 1.00],
-            [1.48, 0.19, 0.78],
-            [2.00, 0.15, 0.60],
-            [2.66, 0.09, 0.45],
-            [3.55, 0.05, 0.32]
+            [0.50, 0.26, 1.00],
+            [1.00, 0.47, 1.00],
+            [1.51, 0.19, 0.76],
+            [2.00, 0.13, 0.58],
+            [2.72, 0.08, 0.43],
+            [3.68, 0.04, 0.31]
           ]
         };
       }
 
       return {
         pitch: 1.00,
-        duration: 4.8,
+        duration: hourBell ? 6.5 : 4.8,
         harmonics: [
           [0.50, 0.30, 1.00],
-          [1.00, 0.48, 1.00],
+          [1.00, 0.50, 1.00],
           [1.50, 0.18, 0.78],
           [2.00, 0.14, 0.62],
           [2.74, 0.09, 0.48],
@@ -395,40 +437,30 @@
         return;
       }
 
-      const style = soundChoice.value;
-      const settings = getBellSettings(style, hourBell);
+      const settings = getBellSettings(hourBell);
       const start = audioContext.currentTime + delay;
 
       settings.harmonics.forEach(harmonic => {
-        const ratio = harmonic[0];
-        const amount = harmonic[1];
-        const fade = harmonic[2];
-
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
 
         oscillator.type = "sine";
 
         oscillator.frequency.setValueAtTime(
-          frequency * settings.pitch * ratio,
-          start
-        );
-
-        oscillator.detune.setValueAtTime(
-          style === "bigben" ? -4 : 0,
+          frequency * settings.pitch * harmonic[0],
           start
         );
 
         gain.gain.setValueAtTime(0.0001, start);
 
         gain.gain.exponentialRampToValueAtTime(
-          Math.max(0.001, amount),
+          Math.max(0.001, harmonic[1]),
           start + 0.03
         );
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          start + settings.duration * fade
+          start + settings.duration * harmonic[2]
         );
 
         oscillator.connect(gain);
@@ -439,15 +471,41 @@
       });
     }
 
-    function playSequence(sequence) {
+    function getCurrentMusic(minutes) {
+      if (soundChoice.value === "whittington") {
+        return {
+          sequence: whittington[minutes],
+          notes: whittingtonNotes,
+          strikeNote: whittingtonNotes.D3
+        };
+      }
+
+      return {
+        sequence: westminster[minutes],
+        notes: westminsterNotes,
+        strikeNote: westminsterNotes.E3
+      };
+    }
+
+    function playSequence(minutes) {
       prepareAudio();
 
-      sequence.forEach(([note, delay]) => {
-        playBell(notes[note], delay, false);
+      const music = getCurrentMusic(minutes);
+
+      music.sequence.forEach(([note, delay]) => {
+        playBell(music.notes[note], delay, false);
       });
     }
 
+    function getSequenceLength(minutes) {
+      const music = getCurrentMusic(minutes);
+      const lastNote = music.sequence[music.sequence.length - 1];
+
+      return lastNote[1] + 2.4;
+    }
+
     function strikeHour(hour, delay) {
+      const music = getCurrentMusic(0);
       let strikes = hour % 12;
 
       if (strikes === 0) {
@@ -458,7 +516,11 @@
         soundChoice.value === "bigben" ? 3.8 : 3.15;
 
       for (let i = 0; i < strikes; i++) {
-        playBell(notes.E3, delay + i * spacing, true);
+        playBell(
+          music.strikeNote,
+          delay + i * spacing,
+          true
+        );
       }
     }
 
@@ -467,33 +529,13 @@
         return;
       }
 
-      if (minutes === 15) {
-        statusDisplay.textContent =
-          "Playing the quarter-hour chime.";
+      statusDisplay.textContent =
+        "Playing " + getSoundName() + ".";
 
-        playSequence(firstQuarter);
-      }
-
-      if (minutes === 30) {
-        statusDisplay.textContent =
-          "Playing the half-hour chime.";
-
-        playSequence(secondQuarter);
-      }
-
-      if (minutes === 45) {
-        statusDisplay.textContent =
-          "Playing the three-quarter-hour chime.";
-
-        playSequence(thirdQuarter);
-      }
+      playSequence(minutes);
 
       if (minutes === 0) {
-        statusDisplay.textContent =
-          "Playing the full chime and hour strikes.";
-
-        playSequence(fullHour);
-        strikeHour(hour, 15.8);
+        strikeHour(hour, getSequenceLength(0));
       }
     }
 
@@ -555,13 +597,8 @@
         audioContext.currentTime
       );
 
-      const name =
-        soundChoice.value === "bigben"
-          ? "Big Ben"
-          : "Westminster Tower Bells";
-
       statusDisplay.textContent =
-        name + " chimes are on.";
+        getSoundName() + " are on.";
     });
 
     testButton.addEventListener("click", () => {
@@ -575,23 +612,23 @@
         audioContext.currentTime
       );
 
-      const name =
-        soundChoice.value === "bigben"
-          ? "Big Ben"
-          : "Westminster Tower Bells";
-
       statusDisplay.textContent =
-        "Playing " + name + ".";
+        "Playing " + getSoundName() + ".";
 
-      playSequence(fullHour);
-      playBell(notes.E3, 15.8, true);
+      playSequence(0);
+
+      const music = getCurrentMusic(0);
+
+      playBell(
+        music.strikeNote,
+        getSequenceLength(0),
+        true
+      );
     });
 
     stopButton.addEventListener("click", () => {
       chimesEnabled = false;
-
-      statusDisplay.textContent =
-        "Automatic chimes are stopped.";
+      statusDisplay.textContent = "Automatic chimes are stopped.";
     });
 
     muteButton.addEventListener("click", () => {
@@ -611,13 +648,8 @@
     });
 
     soundChoice.addEventListener("change", () => {
-      const name =
-        soundChoice.value === "bigben"
-          ? "Big Ben"
-          : "Westminster Tower Bells";
-
       statusDisplay.textContent =
-        name + " selected. Press Test Selected Chime.";
+        getSoundName() + " selected. Press Test Selected Chime.";
     });
 
     volumeSlider.addEventListener("input", () => {
