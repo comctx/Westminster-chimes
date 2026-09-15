@@ -4,10 +4,15 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
 
+    integrations:
+      app_store_connect: Codemagic
+
     environment:
       node: latest
       xcode: latest
       cocoapods: default
+      vars:
+        BUNDLE_ID: "com.donaldreckman.westminsterchimes"
 
     scripts:
       - name: Install dependencies
@@ -33,19 +38,27 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: Build iOS app
+      - name: Get Apple signing files
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+
+      - name: Apply Apple signing
         script: |
           cd ios/App
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO \
-            archive
+          xcode-project use-profiles
+
+      - name: Build signed iOS app
+        script: |
+          cd ios/App
+          xcode-project build-ipa --workspace App.xcworkspace --scheme App
 
     artifacts:
-      - build/**/*.xcarchive
-      - ios/App/build/**/*.app
+      - ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
