@@ -20,8 +20,7 @@
       padding: 20px;
       color: white;
       font-family: Arial, sans-serif;
-      background:
-        radial-gradient(circle at top, #344d68, #172238 55%, #080c14);
+      background: radial-gradient(circle at top, #344d68, #172238 55%, #080c14);
     }
 
     .clock {
@@ -38,8 +37,7 @@
     h1 {
       margin: 0 0 10px;
       color: #f3cf62;
-      font-family: Georgia, serif;
-      font-size: 38px;
+      font: bold 38px Georgia, serif;
     }
 
     .subtitle {
@@ -110,7 +108,7 @@
     button {
       min-height: 54px;
       padding: 12px;
-      border: none;
+      border: 0;
       border-radius: 12px;
       color: white;
       font-size: 17px;
@@ -172,10 +170,7 @@
   <main class="clock">
     <h1>Clock Tower Chimes</h1>
 
-    <div class="subtitle">
-      Traditional clock and tower melodies
-    </div>
-
+    <div class="subtitle">Traditional clock and tower melodies</div>
     <div class="bell">🔔</div>
 
     <div id="time">--:--:--</div>
@@ -185,17 +180,10 @@
       <label for="soundChoice">Choose a chime</label>
 
       <select id="soundChoice">
-        <option value="westminster">
-          Westminster Tower Bells
-        </option>
-
-        <option value="bigben">
-          Big Ben — London
-        </option>
-
-        <option value="whittington">
-          Whittington Chimes
-        </option>
+        <option value="westminster">Westminster Tower Bells</option>
+        <option value="bigben">Big Ben — London</option>
+        <option value="whittington">Whittington Chimes</option>
+        <option value="stmichael">St. Michael Chimes</option>
       </select>
     </div>
 
@@ -226,143 +214,159 @@
     const timeDisplay = document.getElementById("time");
     const dateDisplay = document.getElementById("date");
     const statusDisplay = document.getElementById("status");
-
     const soundChoice = document.getElementById("soundChoice");
     const startButton = document.getElementById("startButton");
     const testButton = document.getElementById("testButton");
     const stopButton = document.getElementById("stopButton");
     const muteButton = document.getElementById("muteButton");
-
     const volumeSlider = document.getElementById("volume");
     const volumeValue = document.getElementById("volumeValue");
 
     let audioContext;
     let masterGain;
-    let chimesEnabled = false;
+    let enabled = false;
     let muted = false;
     let lastChimeKey = "";
 
-    const westminsterNotes = {
-      B3: 246.94,
-      E4: 329.63,
-      FS4: 369.99,
-      GS4: 415.30,
-      E3: 164.81
+    const noteSets = {
+      westminster: {
+        B3: 246.94,
+        E4: 329.63,
+        FS4: 369.99,
+        GS4: 415.30,
+        STRIKE: 164.81
+      },
+
+      whittington: {
+        N1: 293.66,
+        N2: 329.63,
+        N3: 369.99,
+        N4: 392.00,
+        N5: 440.00,
+        N6: 493.88,
+        N7: 554.37,
+        N8: 587.33,
+        STRIKE: 146.83
+      },
+
+      stmichael: {
+        N1: 349.23,
+        N2: 392.00,
+        N3: 440.00,
+        N4: 466.16,
+        N5: 523.25,
+        N6: 587.33,
+        N7: 659.25,
+        N8: 698.46,
+        STRIKE: 174.61
+      }
     };
 
-    const westminster = {
-      15: [
-        ["GS4", 0.00], ["FS4", 0.82],
-        ["E4", 1.64], ["B3", 2.46]
-      ],
-
-      30: [
-        ["E4", 0.00], ["GS4", 0.82],
-        ["FS4", 1.64], ["B3", 2.46],
-
-        ["E4", 3.65], ["FS4", 4.47],
-        ["GS4", 5.29], ["E4", 6.11]
-      ],
-
-      45: [
-        ["GS4", 0.00], ["E4", 0.82],
-        ["FS4", 1.64], ["B3", 2.46],
-
-        ["B3", 3.65], ["FS4", 4.47],
-        ["GS4", 5.29], ["E4", 6.11],
-
-        ["GS4", 7.30], ["FS4", 8.12],
-        ["E4", 8.94], ["B3", 9.76]
-      ],
-
-      0: [
-        ["E4", 0.00], ["GS4", 0.82],
-        ["FS4", 1.64], ["B3", 2.46],
-
-        ["E4", 3.65], ["FS4", 4.47],
-        ["GS4", 5.29], ["E4", 6.11],
-
-        ["GS4", 7.30], ["E4", 8.12],
-        ["FS4", 8.94], ["B3", 9.76],
-
-        ["B3", 10.95], ["FS4", 11.77],
-        ["GS4", 12.59], ["E4", 13.41]
-      ]
-    };
-
-    const whittingtonNotes = {
-      D4: 293.66,
-      E4: 329.63,
-      FS4: 369.99,
-      G4: 392.00,
-      A4: 440.00,
-      B4: 493.88,
-      CS5: 554.37,
-      D5: 587.33,
-      D3: 146.83
-    };
-
-    const W1 = [
-      "D5", "CS5", "B4", "A4",
-      "G4", "FS4", "E4", "D4"
-    ];
-
-    const W2A = [
-      "D5", "E4", "CS5", "FS4",
-      "B4", "G4", "A4", "D4"
-    ];
-
-    const W2B = [
-      "D5", "B4", "G4", "E4",
-      "CS5", "A4", "FS4", "D4"
-    ];
-
-    const W3A = [
-      "D5", "CS5", "G4", "FS4",
-      "B4", "A4", "E4", "D4"
-    ];
-
-    const W3B = [
-      "E4", "G4", "B4", "D5",
-      "A4", "E4", "FS4", "D4"
-    ];
-
-    function makeWhittingtonSequence(groups) {
+    function timedGroups(groups, gap = 5.05, spacing = 0.56) {
       const result = [];
-      let start = 0;
+      let groupStart = 0;
 
       groups.forEach(group => {
         group.forEach((note, index) => {
-          result.push([note, start + index * 0.56]);
+          result.push([note, groupStart + index * spacing]);
         });
 
-        start += 5.05;
+        groupStart += gap;
       });
 
       return result;
     }
 
+    const westminster = {
+      15: timedGroups([
+        ["GS4", "FS4", "E4", "B3"]
+      ], 3.65, 0.82),
+
+      30: timedGroups([
+        ["E4", "GS4", "FS4", "B3"],
+        ["E4", "FS4", "GS4", "E4"]
+      ], 3.65, 0.82),
+
+      45: timedGroups([
+        ["GS4", "E4", "FS4", "B3"],
+        ["B3", "FS4", "GS4", "E4"],
+        ["GS4", "FS4", "E4", "B3"]
+      ], 3.65, 0.82),
+
+      0: timedGroups([
+        ["E4", "GS4", "FS4", "B3"],
+        ["E4", "FS4", "GS4", "E4"],
+        ["GS4", "E4", "FS4", "B3"],
+        ["B3", "FS4", "GS4", "E4"]
+      ], 3.65, 0.82)
+    };
+
+    const W1 = ["N8", "N7", "N6", "N5", "N4", "N3", "N2", "N1"];
+    const W2A = ["N8", "N2", "N7", "N3", "N6", "N4", "N5", "N1"];
+    const W2B = ["N8", "N6", "N4", "N2", "N7", "N5", "N3", "N1"];
+    const W3A = ["N8", "N7", "N4", "N3", "N6", "N5", "N2", "N1"];
+    const W3B = ["N2", "N4", "N6", "N8", "N5", "N2", "N3", "N1"];
+
     const whittington = {
-      15: makeWhittingtonSequence([W1]),
-      30: makeWhittingtonSequence([W2A, W2B]),
-      45: makeWhittingtonSequence([W3A, W3B, W1]),
-      0: makeWhittingtonSequence([W2A, W2B, W3A, W3B])
+      15: timedGroups([W1]),
+      30: timedGroups([W2A, W2B]),
+      45: timedGroups([W3A, W3B, W1]),
+      0: timedGroups([W2A, W2B, W3A, W3B])
+    };
+
+    const S1 = ["N8", "N7", "N6", "N5", "N4", "N3", "N2", "N1"];
+    const S2A = ["N8", "N2", "N3", "N4", "N7", "N5", "N6", "N1"];
+    const S2B = ["N5", "N4", "N3", "N6", "N2", "N7", "N8", "N1"];
+    const S3A = ["N7", "N8", "N3", "N4", "N2", "N5", "N6", "N1"];
+    const S3B = ["N5", "N7", "N3", "N8", "N4", "N2", "N6", "N1"];
+
+    const stMichael = {
+      15: timedGroups([S1]),
+      30: timedGroups([S2A, S2B]),
+      45: timedGroups([S3A, S3B, S1]),
+      0: timedGroups([S2A, S2B, S3A, S3B])
     };
 
     function getVolume() {
       return muted ? 0 : Number(volumeSlider.value) / 100;
     }
 
-    function getSoundName() {
-      if (soundChoice.value === "bigben") {
-        return "Big Ben";
+    function getStyle() {
+      return soundChoice.value;
+    }
+
+    function getName() {
+      const names = {
+        westminster: "Westminster Tower Bells",
+        bigben: "Big Ben",
+        whittington: "Whittington Chimes",
+        stmichael: "St. Michael Chimes"
+      };
+
+      return names[getStyle()];
+    }
+
+    function getMusic(minutes) {
+      const style = getStyle();
+
+      if (style === "whittington") {
+        return {
+          sequence: whittington[minutes],
+          notes: noteSets.whittington
+        };
       }
 
-      if (soundChoice.value === "whittington") {
-        return "Whittington Chimes";
+      if (style === "stmichael") {
+        return {
+          sequence: stMichael[minutes],
+          notes: noteSets.stmichael
+        };
       }
 
-      return "Westminster Tower Bells";
+      return {
+        sequence: westminster[minutes],
+        notes: noteSets.westminster
+      };
     }
 
     function prepareAudio() {
@@ -385,50 +389,26 @@
       );
     }
 
-    function getBellSettings(hourBell) {
-      const style = soundChoice.value;
+    function bellSettings(hourBell) {
+      const style = getStyle();
 
       if (style === "bigben") {
         return {
           pitch: hourBell ? 0.79 : 0.88,
-          duration: hourBell ? 8.2 : 6.2,
-          harmonics: [
-            [0.50, 0.48, 1.00],
-            [1.00, 0.61, 1.00],
-            [1.48, 0.23, 0.82],
-            [2.00, 0.18, 0.67],
-            [2.68, 0.11, 0.50],
-            [3.58, 0.06, 0.36]
-          ]
+          duration: hourBell ? 8.2 : 6.2
         };
       }
 
-      if (style === "whittington") {
+      if (style === "stmichael") {
         return {
-          pitch: 1.00,
-          duration: hourBell ? 6.8 : 4.3,
-          harmonics: [
-            [0.50, 0.26, 1.00],
-            [1.00, 0.47, 1.00],
-            [1.51, 0.19, 0.76],
-            [2.00, 0.13, 0.58],
-            [2.72, 0.08, 0.43],
-            [3.68, 0.04, 0.31]
-          ]
+          pitch: 1,
+          duration: hourBell ? 7.2 : 4.5
         };
       }
 
       return {
-        pitch: 1.00,
-        duration: hourBell ? 6.5 : 4.8,
-        harmonics: [
-          [0.50, 0.30, 1.00],
-          [1.00, 0.50, 1.00],
-          [1.50, 0.18, 0.78],
-          [2.00, 0.14, 0.62],
-          [2.74, 0.09, 0.48],
-          [3.76, 0.05, 0.35]
-        ]
+        pitch: 1,
+        duration: hourBell ? 6.7 : 4.8
       };
     }
 
@@ -437,30 +417,39 @@
         return;
       }
 
-      const settings = getBellSettings(hourBell);
+      const settings = bellSettings(hourBell);
       const start = audioContext.currentTime + delay;
 
-      settings.harmonics.forEach(harmonic => {
+      const harmonics = [
+        [0.50, 0.29, 1.00],
+        [1.00, 0.49, 1.00],
+        [1.49, 0.19, 0.78],
+        [2.00, 0.14, 0.61],
+        [2.72, 0.09, 0.46],
+        [3.68, 0.05, 0.33]
+      ];
+
+      harmonics.forEach(([ratio, amount, fade]) => {
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
 
         oscillator.type = "sine";
 
         oscillator.frequency.setValueAtTime(
-          frequency * settings.pitch * harmonic[0],
+          frequency * settings.pitch * ratio,
           start
         );
 
         gain.gain.setValueAtTime(0.0001, start);
 
         gain.gain.exponentialRampToValueAtTime(
-          Math.max(0.001, harmonic[1]),
+          amount,
           start + 0.03
         );
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          start + settings.duration * harmonic[2]
+          start + settings.duration * fade
         );
 
         oscillator.connect(gain);
@@ -471,76 +460,51 @@
       });
     }
 
-    function getCurrentMusic(minutes) {
-      if (soundChoice.value === "whittington") {
-        return {
-          sequence: whittington[minutes],
-          notes: whittingtonNotes,
-          strikeNote: whittingtonNotes.D3
-        };
-      }
-
-      return {
-        sequence: westminster[minutes],
-        notes: westminsterNotes,
-        strikeNote: westminsterNotes.E3
-      };
-    }
-
     function playSequence(minutes) {
       prepareAudio();
 
-      const music = getCurrentMusic(minutes);
+      const music = getMusic(minutes);
 
       music.sequence.forEach(([note, delay]) => {
-        playBell(music.notes[note], delay, false);
+        playBell(music.notes[note], delay);
       });
     }
 
-    function getSequenceLength(minutes) {
-      const music = getCurrentMusic(minutes);
-      const lastNote = music.sequence[music.sequence.length - 1];
-
-      return lastNote[1] + 2.4;
+    function sequenceLength(minutes) {
+      const sequence = getMusic(minutes).sequence;
+      return sequence[sequence.length - 1][1] + 2.4;
     }
 
     function strikeHour(hour, delay) {
-      const music = getCurrentMusic(0);
+      const notes = getMusic(0).notes;
       let strikes = hour % 12;
 
       if (strikes === 0) {
         strikes = 12;
       }
 
-      const spacing =
-        soundChoice.value === "bigben" ? 3.8 : 3.15;
+      const spacing = getStyle() === "bigben" ? 3.8 : 3.15;
 
       for (let i = 0; i < strikes; i++) {
-        playBell(
-          music.strikeNote,
-          delay + i * spacing,
-          true
-        );
+        playBell(notes.STRIKE, delay + i * spacing, true);
       }
     }
 
-    function playQuarterChime(minutes, hour) {
-      if (!chimesEnabled || muted) {
+    function playQuarter(minutes, hour) {
+      if (!enabled || muted) {
         return;
       }
 
-      statusDisplay.textContent =
-        "Playing " + getSoundName() + ".";
-
+      statusDisplay.textContent = "Playing " + getName() + ".";
       playSequence(minutes);
 
       if (minutes === 0) {
-        strikeHour(hour, getSequenceLength(0));
+        strikeHour(hour, sequenceLength(0));
       }
     }
 
-    function checkForChime(now) {
-      if (!chimesEnabled) {
+    function checkChime(now) {
+      if (!enabled) {
         return;
       }
 
@@ -551,19 +515,19 @@
         return;
       }
 
-      const chimeKey =
+      const key =
         now.getFullYear() + "-" +
         now.getMonth() + "-" +
         now.getDate() + "-" +
         now.getHours() + "-" +
         minutes;
 
-      if (chimeKey === lastChimeKey) {
+      if (key === lastChimeKey) {
         return;
       }
 
-      lastChimeKey = chimeKey;
-      playQuarterChime(minutes, now.getHours());
+      lastChimeKey = key;
+      playQuarter(minutes, now.getHours());
     }
 
     function updateClock() {
@@ -582,58 +546,41 @@
         year: "numeric"
       });
 
-      checkForChime(now);
+      checkChime(now);
     }
 
     startButton.addEventListener("click", () => {
       prepareAudio();
-
-      chimesEnabled = true;
+      enabled = true;
       muted = false;
       muteButton.textContent = "Mute";
-
-      masterGain.gain.setValueAtTime(
-        getVolume(),
-        audioContext.currentTime
-      );
-
-      statusDisplay.textContent =
-        getSoundName() + " are on.";
+      statusDisplay.textContent = getName() + " are on.";
     });
 
     testButton.addEventListener("click", () => {
       prepareAudio();
-
       muted = false;
       muteButton.textContent = "Mute";
-
-      masterGain.gain.setValueAtTime(
-        getVolume(),
-        audioContext.currentTime
-      );
-
-      statusDisplay.textContent =
-        "Playing " + getSoundName() + ".";
+      statusDisplay.textContent = "Playing " + getName() + ".";
 
       playSequence(0);
 
-      const music = getCurrentMusic(0);
+      const music = getMusic(0);
 
       playBell(
-        music.strikeNote,
-        getSequenceLength(0),
+        music.notes.STRIKE,
+        sequenceLength(0),
         true
       );
     });
 
     stopButton.addEventListener("click", () => {
-      chimesEnabled = false;
+      enabled = false;
       statusDisplay.textContent = "Automatic chimes are stopped.";
     });
 
     muteButton.addEventListener("click", () => {
       prepareAudio();
-
       muted = !muted;
       muteButton.textContent = muted ? "Unmute" : "Mute";
 
@@ -649,7 +596,7 @@
 
     soundChoice.addEventListener("change", () => {
       statusDisplay.textContent =
-        getSoundName() + " selected. Press Test Selected Chime.";
+        getName() + " selected. Press Test Selected Chime.";
     });
 
     volumeSlider.addEventListener("input", () => {
