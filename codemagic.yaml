@@ -14,7 +14,7 @@ workflows:
         script: |
           npm install
 
-         - name: Create iOS project
+      - name: Create iOS project
         script: |
           rm -rf ios www
           mkdir -p www
