@@ -7,9 +7,7 @@
   <title>Clock Tower Chimes</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -121,21 +119,11 @@
       background: #f3cf62;
     }
 
-    #testButton {
-      background: #276749;
-    }
+    #testButton { background: #276749; }
+    #stopButton { background: #9b2c2c; }
+    #muteButton { background: #35465f; }
 
-    #stopButton {
-      background: #9b2c2c;
-    }
-
-    #muteButton {
-      background: #35465f;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(0.98); }
 
     .volume-box {
       margin-top: 24px;
@@ -143,9 +131,7 @@
       border-top: 1px solid #4b5870;
     }
 
-    input[type="range"] {
-      width: 100%;
-    }
+    input[type="range"] { width: 100%; }
 
     .note {
       margin-top: 22px;
@@ -155,13 +141,8 @@
     }
 
     @media (max-width: 420px) {
-      .buttons {
-        grid-template-columns: 1fr;
-      }
-
-      h1 {
-        font-size: 31px;
-      }
+      .buttons { grid-template-columns: 1fr; }
+      h1 { font-size: 31px; }
     }
   </style>
 </head>
@@ -184,7 +165,7 @@
         <option value="bigben">Big Ben — London</option>
         <option value="whittington">Whittington Chimes</option>
         <option value="stmichael">St. Michael Chimes</option>
-        <option value="cuckoo">Traditional Cuckoo Clock</option>
+        <option value="cuckoo">Black Forest Cuckoo Clock</option>
       </select>
     </div>
 
@@ -343,7 +324,7 @@
         bigben: "Big Ben",
         whittington: "Whittington Chimes",
         stmichael: "St. Michael Chimes",
-        cuckoo: "Traditional Cuckoo Clock"
+        cuckoo: "Black Forest Cuckoo Clock"
       };
 
       return names[getStyle()];
@@ -398,16 +379,9 @@
         };
       }
 
-      if (getStyle() === "stmichael") {
-        return {
-          pitch: 1,
-          duration: hourBell ? 7.2 : 4.5
-        };
-      }
-
       return {
         pitch: 1,
-        duration: hourBell ? 6.7 : 4.8
+        duration: hourBell ? 6.8 : 4.8
       };
     }
 
@@ -485,28 +459,94 @@
       }
     }
 
-    function playCuckooNote(frequency, start, duration) {
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
+    function createBreathNoise(start, duration, amount) {
+      const sampleCount =
+        Math.floor(audioContext.sampleRate * duration);
+
+      const buffer = audioContext.createBuffer(
+        1,
+        sampleCount,
+        audioContext.sampleRate
+      );
+
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < sampleCount; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = audioContext.createBufferSource();
       const filter = audioContext.createBiquadFilter();
+      const gain = audioContext.createGain();
 
-      oscillator.type = "triangle";
-      oscillator.frequency.setValueAtTime(frequency, start);
+      noise.buffer = buffer;
 
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1300, start);
-      filter.Q.setValueAtTime(3, start);
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(850, start);
+      filter.Q.setValueAtTime(1.3, start);
 
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.5, start + 0.04);
+      gain.gain.linearRampToValueAtTime(amount, start + 0.04);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
-      oscillator.connect(filter);
+      noise.connect(filter);
       filter.connect(gain);
       gain.connect(masterGain);
 
-      oscillator.start(start);
-      oscillator.stop(start + duration + 0.05);
+      noise.start(start);
+      noise.stop(start + duration);
+    }
+
+    function playWoodenWhistle(frequency, start, duration) {
+      const whistleGain = audioContext.createGain();
+      const bodyFilter = audioContext.createBiquadFilter();
+
+      bodyFilter.type = "lowpass";
+      bodyFilter.frequency.setValueAtTime(1450, start);
+      bodyFilter.Q.setValueAtTime(2.5, start);
+
+      whistleGain.gain.setValueAtTime(0.0001, start);
+      whistleGain.gain.linearRampToValueAtTime(0.58, start + 0.055);
+      whistleGain.gain.setValueAtTime(0.55, start + duration * 0.62);
+
+      whistleGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        start + duration
+      );
+
+      const fundamental = audioContext.createOscillator();
+      fundamental.type = "triangle";
+
+      fundamental.frequency.setValueAtTime(
+        frequency * 0.975,
+        start
+      );
+
+      fundamental.frequency.exponentialRampToValueAtTime(
+        frequency,
+        start + 0.08
+      );
+
+      const hollowTone = audioContext.createOscillator();
+      const hollowGain = audioContext.createGain();
+
+      hollowTone.type = "sine";
+      hollowTone.frequency.setValueAtTime(frequency * 2, start);
+      hollowGain.gain.setValueAtTime(0.12, start);
+
+      fundamental.connect(bodyFilter);
+      hollowTone.connect(hollowGain);
+      hollowGain.connect(bodyFilter);
+      bodyFilter.connect(whistleGain);
+      whistleGain.connect(masterGain);
+
+      fundamental.start(start);
+      hollowTone.start(start);
+
+      fundamental.stop(start + duration + 0.05);
+      hollowTone.stop(start + duration + 0.05);
+
+      createBreathNoise(start, duration, 0.055);
     }
 
     function playOneCuckoo(delay) {
@@ -514,15 +554,15 @@
 
       const start = audioContext.currentTime + delay;
 
-      playCuckooNote(783.99, start, 0.42);
-      playCuckooNote(523.25, start + 0.46, 0.62);
+      playWoodenWhistle(659.25, start, 0.34);
+      playWoodenWhistle(523.25, start + 0.39, 0.62);
     }
 
     function playCuckooCalls(numberOfCalls) {
       prepareAudio();
 
       for (let i = 0; i < numberOfCalls; i++) {
-        playOneCuckoo(i * 1.55);
+        playOneCuckoo(i * 1.45);
       }
     }
 
