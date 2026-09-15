@@ -47,7 +47,6 @@
     .bell {
       margin: 10px 0;
       font-size: 76px;
-      filter: drop-shadow(0 5px 8px rgba(212, 175, 55, 0.35));
     }
 
     #time {
@@ -123,8 +122,6 @@
     #stopButton { background: #9b2c2c; }
     #muteButton { background: #35465f; }
 
-    button:active { transform: scale(0.98); }
-
     .volume-box {
       margin-top: 24px;
       padding-top: 18px;
@@ -165,6 +162,7 @@
         <option value="bigben">Big Ben — London</option>
         <option value="whittington">Whittington Chimes</option>
         <option value="stmichael">St. Michael Chimes</option>
+        <option value="canterbury">Canterbury Chimes</option>
         <option value="cuckoo">Black Forest Cuckoo Clock</option>
       </select>
     </div>
@@ -192,18 +190,20 @@
   </main>
 
   <script>
-    const timeDisplay = document.getElementById("time");
-    const dateDisplay = document.getElementById("date");
-    const statusDisplay = document.getElementById("status");
-    const soundChoice = document.getElementById("soundChoice");
-    const startButton = document.getElementById("startButton");
-    const testButton = document.getElementById("testButton");
-    const stopButton = document.getElementById("stopButton");
-    const muteButton = document.getElementById("muteButton");
-    const volumeSlider = document.getElementById("volume");
-    const volumeValue = document.getElementById("volumeValue");
-    const clockIcon = document.getElementById("clockIcon");
-    const scheduleNote = document.getElementById("scheduleNote");
+    const $ = id => document.getElementById(id);
+
+    const timeDisplay = $("time");
+    const dateDisplay = $("date");
+    const statusDisplay = $("status");
+    const soundChoice = $("soundChoice");
+    const startButton = $("startButton");
+    const testButton = $("testButton");
+    const stopButton = $("stopButton");
+    const muteButton = $("muteButton");
+    const volumeSlider = $("volume");
+    const volumeValue = $("volumeValue");
+    const clockIcon = $("clockIcon");
+    const scheduleNote = $("scheduleNote");
 
     let audioContext;
     let masterGain;
@@ -211,123 +211,165 @@
     let muted = false;
     let lastChimeKey = "";
 
+    const names = {
+      westminster: "Westminster Tower Bells",
+      bigben: "Big Ben",
+      whittington: "Whittington Chimes",
+      stmichael: "St. Michael Chimes",
+      canterbury: "Canterbury Chimes",
+      cuckoo: "Black Forest Cuckoo Clock"
+    };
+
     const noteSets = {
       westminster: {
-        B3: 246.94,
-        E4: 329.63,
-        FS4: 369.99,
-        GS4: 415.30,
-        STRIKE: 164.81
+        1: 246.94,
+        2: 329.63,
+        3: 369.99,
+        4: 415.30,
+        strike: 164.81
       },
 
       whittington: {
-        N1: 293.66,
-        N2: 329.63,
-        N3: 369.99,
-        N4: 392.00,
-        N5: 440.00,
-        N6: 493.88,
-        N7: 554.37,
-        N8: 587.33,
-        STRIKE: 146.83
+        1: 293.66,
+        2: 329.63,
+        3: 369.99,
+        4: 392.00,
+        5: 440.00,
+        6: 493.88,
+        7: 554.37,
+        8: 587.33,
+        strike: 146.83
       },
 
       stmichael: {
-        N1: 349.23,
-        N2: 392.00,
-        N3: 440.00,
-        N4: 466.16,
-        N5: 523.25,
-        N6: 587.33,
-        N7: 659.25,
-        N8: 698.46,
-        STRIKE: 174.61
+        1: 349.23,
+        2: 392.00,
+        3: 440.00,
+        4: 466.16,
+        5: 523.25,
+        6: 587.33,
+        7: 659.25,
+        8: 698.46,
+        strike: 174.61
+      },
+
+      canterbury: {
+        1: 293.66,
+        2: 329.63,
+        3: 369.99,
+        4: 392.00,
+        5: 440.00,
+        6: 493.88,
+        strike: 146.83
       }
     };
 
-    function timedGroups(groups, gap = 5.05, spacing = 0.56) {
-      const result = [];
-      let groupStart = 0;
+    const melodies = {
+      westminster: {
+        15: [[4, 3, 2, 1]],
 
-      groups.forEach(group => {
-        group.forEach((note, index) => {
-          result.push([note, groupStart + index * spacing]);
-        });
+        30: [
+          [2, 4, 3, 1],
+          [2, 3, 4, 2]
+        ],
 
-        groupStart += gap;
-      });
+        45: [
+          [4, 2, 3, 1],
+          [1, 3, 4, 2],
+          [4, 3, 2, 1]
+        ],
 
-      return result;
-    }
+        0: [
+          [2, 4, 3, 1],
+          [2, 3, 4, 2],
+          [4, 2, 3, 1],
+          [1, 3, 4, 2]
+        ]
+      },
 
-    const westminster = {
-      15: timedGroups([
-        ["GS4", "FS4", "E4", "B3"]
-      ], 3.65, 0.82),
+      whittington: {
+        15: [
+          [8, 7, 6, 5, 4, 3, 2, 1]
+        ],
 
-      30: timedGroups([
-        ["E4", "GS4", "FS4", "B3"],
-        ["E4", "FS4", "GS4", "E4"]
-      ], 3.65, 0.82),
+        30: [
+          [8, 2, 7, 3, 6, 4, 5, 1],
+          [8, 6, 4, 2, 7, 5, 3, 1]
+        ],
 
-      45: timedGroups([
-        ["GS4", "E4", "FS4", "B3"],
-        ["B3", "FS4", "GS4", "E4"],
-        ["GS4", "FS4", "E4", "B3"]
-      ], 3.65, 0.82),
+        45: [
+          [8, 7, 4, 3, 6, 5, 2, 1],
+          [2, 4, 6, 8, 5, 2, 3, 1],
+          [8, 7, 6, 5, 4, 3, 2, 1]
+        ],
 
-      0: timedGroups([
-        ["E4", "GS4", "FS4", "B3"],
-        ["E4", "FS4", "GS4", "E4"],
-        ["GS4", "E4", "FS4", "B3"],
-        ["B3", "FS4", "GS4", "E4"]
-      ], 3.65, 0.82)
+        0: [
+          [8, 2, 7, 3, 6, 4, 5, 1],
+          [8, 6, 4, 2, 7, 5, 3, 1],
+          [8, 7, 4, 3, 6, 5, 2, 1],
+          [2, 4, 6, 8, 5, 2, 3, 1]
+        ]
+      },
+
+      stmichael: {
+        15: [
+          [8, 7, 6, 5, 4, 3, 2, 1]
+        ],
+
+        30: [
+          [8, 2, 3, 4, 7, 5, 6, 1],
+          [5, 4, 3, 6, 2, 7, 8, 1]
+        ],
+
+        45: [
+          [7, 8, 3, 4, 2, 5, 6, 1],
+          [5, 7, 3, 8, 4, 2, 6, 1],
+          [8, 7, 6, 5, 4, 3, 2, 1]
+        ],
+
+        0: [
+          [8, 2, 3, 4, 7, 5, 6, 1],
+          [5, 4, 3, 6, 2, 7, 8, 1],
+          [7, 8, 3, 4, 2, 5, 6, 1],
+          [5, 7, 3, 8, 4, 2, 6, 1]
+        ]
+      },
+
+      canterbury: {
+        15: [
+          [6, 4, 2, 5, 3, 1]
+        ],
+
+        30: [
+          [2, 4, 6, 3, 1, 5],
+          [4, 6, 2, 5, 1, 3]
+        ],
+
+        45: [
+          [1, 6, 4, 2, 3, 5],
+          [4, 6, 2, 5, 1, 3],
+          [6, 4, 2, 3, 5, 1]
+        ],
+
+        0: [
+          [3, 1, 6, 4, 2, 5],
+          [4, 6, 2, 5, 1, 3],
+          [3, 1, 6, 4, 2, 5],
+          [4, 6, 5, 3, 2, 1]
+        ]
+      }
     };
-
-    const W1 = ["N8", "N7", "N6", "N5", "N4", "N3", "N2", "N1"];
-    const W2A = ["N8", "N2", "N7", "N3", "N6", "N4", "N5", "N1"];
-    const W2B = ["N8", "N6", "N4", "N2", "N7", "N5", "N3", "N1"];
-    const W3A = ["N8", "N7", "N4", "N3", "N6", "N5", "N2", "N1"];
-    const W3B = ["N2", "N4", "N6", "N8", "N5", "N2", "N3", "N1"];
-
-    const whittington = {
-      15: timedGroups([W1]),
-      30: timedGroups([W2A, W2B]),
-      45: timedGroups([W3A, W3B, W1]),
-      0: timedGroups([W2A, W2B, W3A, W3B])
-    };
-
-    const S1 = ["N8", "N7", "N6", "N5", "N4", "N3", "N2", "N1"];
-    const S2A = ["N8", "N2", "N3", "N4", "N7", "N5", "N6", "N1"];
-    const S2B = ["N5", "N4", "N3", "N6", "N2", "N7", "N8", "N1"];
-    const S3A = ["N7", "N8", "N3", "N4", "N2", "N5", "N6", "N1"];
-    const S3B = ["N5", "N7", "N3", "N8", "N4", "N2", "N6", "N1"];
-
-    const stMichael = {
-      15: timedGroups([S1]),
-      30: timedGroups([S2A, S2B]),
-      45: timedGroups([S3A, S3B, S1]),
-      0: timedGroups([S2A, S2B, S3A, S3B])
-    };
-
-    function getVolume() {
-      return muted ? 0 : Number(volumeSlider.value) / 100;
-    }
 
     function getStyle() {
       return soundChoice.value;
     }
 
     function getName() {
-      const names = {
-        westminster: "Westminster Tower Bells",
-        bigben: "Big Ben",
-        whittington: "Whittington Chimes",
-        stmichael: "St. Michael Chimes",
-        cuckoo: "Black Forest Cuckoo Clock"
-      };
-
       return names[getStyle()];
+    }
+
+    function getVolume() {
+      return muted ? 0 : Number(volumeSlider.value) / 100;
     }
 
     function prepareAudio() {
@@ -350,24 +392,32 @@
       );
     }
 
-    function getMusic(minutes) {
-      if (getStyle() === "whittington") {
-        return {
-          sequence: whittington[minutes],
-          notes: noteSets.whittington
-        };
-      }
+    function getMusicStyle() {
+      return getStyle() === "bigben"
+        ? "westminster"
+        : getStyle();
+    }
 
-      if (getStyle() === "stmichael") {
-        return {
-          sequence: stMichael[minutes],
-          notes: noteSets.stmichael
-        };
-      }
+    function makeSequence(minutes) {
+      const style = getMusicStyle();
+      const groups = melodies[style][minutes];
+      const sequence = [];
+
+      const spacing = style === "westminster" ? 0.82 : 0.56;
+      const gap = style === "westminster" ? 3.65 : 5.05;
+
+      groups.forEach((group, groupNumber) => {
+        group.forEach((note, noteNumber) => {
+          sequence.push([
+            note,
+            groupNumber * gap + noteNumber * spacing
+          ]);
+        });
+      });
 
       return {
-        sequence: westminster[minutes],
-        notes: noteSets.westminster
+        sequence,
+        notes: noteSets[style]
       };
     }
 
@@ -432,7 +482,7 @@
     function playSequence(minutes) {
       prepareAudio();
 
-      const music = getMusic(minutes);
+      const music = makeSequence(minutes);
 
       music.sequence.forEach(([note, delay]) => {
         playBell(music.notes[note], delay);
@@ -440,12 +490,14 @@
     }
 
     function sequenceLength(minutes) {
-      const sequence = getMusic(minutes).sequence;
+      const sequence = makeSequence(minutes).sequence;
       return sequence[sequence.length - 1][1] + 2.4;
     }
 
     function strikeHour(hour, delay) {
-      const notes = getMusic(0).notes;
+      const style = getMusicStyle();
+      const strikeNote = noteSets[style].strike;
+
       let strikes = hour % 12;
 
       if (strikes === 0) {
@@ -455,11 +507,11 @@
       const spacing = getStyle() === "bigben" ? 3.8 : 3.15;
 
       for (let i = 0; i < strikes; i++) {
-        playBell(notes.STRIKE, delay + i * spacing, true);
+        playBell(strikeNote, delay + i * spacing, true);
       }
     }
 
-    function createBreathNoise(start, duration, amount) {
+    function createBreathNoise(start, duration) {
       const sampleCount =
         Math.floor(audioContext.sampleRate * duration);
 
@@ -480,13 +532,12 @@
       const gain = audioContext.createGain();
 
       noise.buffer = buffer;
-
       filter.type = "bandpass";
-      filter.frequency.setValueAtTime(850, start);
-      filter.Q.setValueAtTime(1.3, start);
+      filter.frequency.value = 850;
+      filter.Q.value = 1.3;
 
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.linearRampToValueAtTime(amount, start + 0.04);
+      gain.gain.linearRampToValueAtTime(0.055, start + 0.04);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
       noise.connect(filter);
@@ -498,55 +549,46 @@
     }
 
     function playWoodenWhistle(frequency, start, duration) {
-      const whistleGain = audioContext.createGain();
-      const bodyFilter = audioContext.createBiquadFilter();
+      const tone = audioContext.createOscillator();
+      const overtone = audioContext.createOscillator();
+      const overtoneGain = audioContext.createGain();
+      const filter = audioContext.createBiquadFilter();
+      const gain = audioContext.createGain();
 
-      bodyFilter.type = "lowpass";
-      bodyFilter.frequency.setValueAtTime(1450, start);
-      bodyFilter.Q.setValueAtTime(2.5, start);
+      tone.type = "triangle";
+      overtone.type = "sine";
 
-      whistleGain.gain.setValueAtTime(0.0001, start);
-      whistleGain.gain.linearRampToValueAtTime(0.58, start + 0.055);
-      whistleGain.gain.setValueAtTime(0.55, start + duration * 0.62);
-
-      whistleGain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        start + duration
-      );
-
-      const fundamental = audioContext.createOscillator();
-      fundamental.type = "triangle";
-
-      fundamental.frequency.setValueAtTime(
-        frequency * 0.975,
-        start
-      );
-
-      fundamental.frequency.exponentialRampToValueAtTime(
+      tone.frequency.setValueAtTime(frequency * 0.975, start);
+      tone.frequency.exponentialRampToValueAtTime(
         frequency,
         start + 0.08
       );
 
-      const hollowTone = audioContext.createOscillator();
-      const hollowGain = audioContext.createGain();
+      overtone.frequency.setValueAtTime(frequency * 2, start);
+      overtoneGain.gain.value = 0.12;
 
-      hollowTone.type = "sine";
-      hollowTone.frequency.setValueAtTime(frequency * 2, start);
-      hollowGain.gain.setValueAtTime(0.12, start);
+      filter.type = "lowpass";
+      filter.frequency.value = 1450;
+      filter.Q.value = 2.5;
 
-      fundamental.connect(bodyFilter);
-      hollowTone.connect(hollowGain);
-      hollowGain.connect(bodyFilter);
-      bodyFilter.connect(whistleGain);
-      whistleGain.connect(masterGain);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(0.58, start + 0.055);
+      gain.gain.setValueAtTime(0.55, start + duration * 0.62);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
-      fundamental.start(start);
-      hollowTone.start(start);
+      tone.connect(filter);
+      overtone.connect(overtoneGain);
+      overtoneGain.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterGain);
 
-      fundamental.stop(start + duration + 0.05);
-      hollowTone.stop(start + duration + 0.05);
+      tone.start(start);
+      overtone.start(start);
 
-      createBreathNoise(start, duration, 0.055);
+      tone.stop(start + duration + 0.05);
+      overtone.stop(start + duration + 0.05);
+
+      createBreathNoise(start, duration);
     }
 
     function playOneCuckoo(delay) {
@@ -559,8 +601,6 @@
     }
 
     function playCuckooCalls(numberOfCalls) {
-      prepareAudio();
-
       for (let i = 0; i < numberOfCalls; i++) {
         playOneCuckoo(i * 1.45);
       }
@@ -670,10 +710,10 @@
 
       playSequence(0);
 
-      const music = getMusic(0);
+      const style = getMusicStyle();
 
       playBell(
-        music.notes.STRIKE,
+        noteSets[style].strike,
         sequenceLength(0),
         true
       );
