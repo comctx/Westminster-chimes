@@ -14,9 +14,20 @@ workflows:
         script: |
           npm install
 
-      - name: Create iOS project
+         - name: Create iOS project
         script: |
-          npx cap add ios || true
+          rm -rf ios www
+          mkdir -p www
+          cp index.html www/index.html
+          if [ -f support.html ]; then cp support.html www/support.html; fi
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.donaldreckman.westminsterchimes",
+            "appName": "Westminster Chimes",
+            "webDir": "www"
+          }
+          EOF
+          npx cap add ios
 
       - name: Sync Westminster Chimes
         script: |
