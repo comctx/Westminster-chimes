@@ -6,7 +6,7 @@
 <title>Clock Tower Chimes</title>
 
 <style>
-*{box-sizing:border-box}f
+*{box-sizing:border-box}
 
 body{
   margin:0;
@@ -667,64 +667,6 @@ volumeSlider.addEventListener("input",()=>{
 
 updateClock();
 setInterval(updateClock,500);
-</script>
-<script>
-function playMorningBirds() {
-  const audio = new (window.AudioContext || window.webkitAudioContext)();
-  const start = audio.currentTime;
-
-  function bird(time, notes, speed, type = "sine") {
-    notes.forEach((frequency, index) => {
-      const oscillator = audio.createOscillator();
-      const volume = audio.createGain();
-
-      oscillator.type = type;
-      oscillator.frequency.setValueAtTime(
-        frequency,
-        start + time + index * speed
-      );
-
-      volume.gain.setValueAtTime(0, start + time + index * speed);
-      volume.gain.linearRampToValueAtTime(
-        0.18,
-        start + time + index * speed + 0.02
-      );
-      volume.gain.exponentialRampToValueAtTime(
-        0.001,
-        start + time + index * speed + 0.18
-      );
-
-      oscillator.connect(volume);
-      volume.connect(audio.destination);
-
-      oscillator.start(start + time + index * speed);
-      oscillator.stop(start + time + index * speed + 0.2);
-    });
-  }
-
-  // Robin
-  bird(0.0, [1600, 2100, 1800, 2400], 0.16);
-
-  // Chickadee
-  bird(1.0, [2800, 2400, 1900, 1900], 0.14, "triangle");
-
-  // Cardinal
-  bird(2.0, [1900, 2300, 2700, 2300, 1900], 0.13);
-
-  // Mourning dove
-  bird(3.2, [650, 560, 500], 0.38, "sine");
-
-  // Cuckoo
-  bird(4.7, [780, 620, 780, 620], 0.45, "sine");
-}
-
-const birdButton = document.createElement("button");
-birdButton.textContent = "🐦 Morning Birds";
-birdButton.onclick = playMorningBirds;
-birdButton.style.cssText =
-  "display:block;margin:16px auto;padding:14px 24px;font-size:18px;border:0;border-radius:10px;background:#2e7d32;color:white;cursor:pointer;";
-
-document.body.appendChild(birdbutton);
 </script>
 </body>
 </html>
