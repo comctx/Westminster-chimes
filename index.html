@@ -170,8 +170,8 @@
   <main class="clock">
     <h1>Clock Tower Chimes</h1>
 
-    <div class="subtitle">Traditional clock and tower melodies</div>
-    <div class="bell">🔔</div>
+    <div class="subtitle">Traditional clocks and tower melodies</div>
+    <div class="bell" id="clockIcon">🔔</div>
 
     <div id="time">--:--:--</div>
     <div id="date">Loading date…</div>
@@ -184,6 +184,7 @@
         <option value="bigben">Big Ben — London</option>
         <option value="whittington">Whittington Chimes</option>
         <option value="stmichael">St. Michael Chimes</option>
+        <option value="cuckoo">Traditional Cuckoo Clock</option>
       </select>
     </div>
 
@@ -204,8 +205,7 @@
       <input id="volume" type="range" min="0" max="100" value="60">
     </div>
 
-    <div class="note">
-      Select a melody and press Test Selected Chime.
+    <div class="note" id="scheduleNote">
       Press Start Chimes once for automatic quarter-hour chimes.
     </div>
   </main>
@@ -221,6 +221,8 @@
     const muteButton = document.getElementById("muteButton");
     const volumeSlider = document.getElementById("volume");
     const volumeValue = document.getElementById("volumeValue");
+    const clockIcon = document.getElementById("clockIcon");
+    const scheduleNote = document.getElementById("scheduleNote");
 
     let audioContext;
     let masterGain;
@@ -340,33 +342,11 @@
         westminster: "Westminster Tower Bells",
         bigben: "Big Ben",
         whittington: "Whittington Chimes",
-        stmichael: "St. Michael Chimes"
+        stmichael: "St. Michael Chimes",
+        cuckoo: "Traditional Cuckoo Clock"
       };
 
       return names[getStyle()];
-    }
-
-    function getMusic(minutes) {
-      const style = getStyle();
-
-      if (style === "whittington") {
-        return {
-          sequence: whittington[minutes],
-          notes: noteSets.whittington
-        };
-      }
-
-      if (style === "stmichael") {
-        return {
-          sequence: stMichael[minutes],
-          notes: noteSets.stmichael
-        };
-      }
-
-      return {
-        sequence: westminster[minutes],
-        notes: noteSets.westminster
-      };
     }
 
     function prepareAudio() {
@@ -389,17 +369,36 @@
       );
     }
 
-    function bellSettings(hourBell) {
-      const style = getStyle();
+    function getMusic(minutes) {
+      if (getStyle() === "whittington") {
+        return {
+          sequence: whittington[minutes],
+          notes: noteSets.whittington
+        };
+      }
 
-      if (style === "bigben") {
+      if (getStyle() === "stmichael") {
+        return {
+          sequence: stMichael[minutes],
+          notes: noteSets.stmichael
+        };
+      }
+
+      return {
+        sequence: westminster[minutes],
+        notes: noteSets.westminster
+      };
+    }
+
+    function bellSettings(hourBell) {
+      if (getStyle() === "bigben") {
         return {
           pitch: hourBell ? 0.79 : 0.88,
           duration: hourBell ? 8.2 : 6.2
         };
       }
 
-      if (style === "stmichael") {
+      if (getStyle() === "stmichael") {
         return {
           pitch: 1,
           duration: hourBell ? 7.2 : 4.5
@@ -441,11 +440,7 @@
         );
 
         gain.gain.setValueAtTime(0.0001, start);
-
-        gain.gain.exponentialRampToValueAtTime(
-          amount,
-          start + 0.03
-        );
+        gain.gain.exponentialRampToValueAtTime(amount, start + 0.03);
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
@@ -490,12 +485,72 @@
       }
     }
 
-    function playQuarter(minutes, hour) {
+    function playCuckooNote(frequency, start, duration) {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const filter = audioContext.createBiquadFilter();
+
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(frequency, start);
+
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(1300, start);
+      filter.Q.setValueAtTime(3, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.5, start + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+      oscillator.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterGain);
+
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.05);
+    }
+
+    function playOneCuckoo(delay) {
+      prepareAudio();
+
+      const start = audioContext.currentTime + delay;
+
+      playCuckooNote(783.99, start, 0.42);
+      playCuckooNote(523.25, start + 0.46, 0.62);
+    }
+
+    function playCuckooCalls(numberOfCalls) {
+      prepareAudio();
+
+      for (let i = 0; i < numberOfCalls; i++) {
+        playOneCuckoo(i * 1.55);
+      }
+    }
+
+    function playAutomatic(minutes, hour) {
       if (!enabled || muted) {
         return;
       }
 
       statusDisplay.textContent = "Playing " + getName() + ".";
+
+      if (getStyle() === "cuckoo") {
+        if (minutes === 30) {
+          playCuckooCalls(1);
+        }
+
+        if (minutes === 0) {
+          let calls = hour % 12;
+
+          if (calls === 0) {
+            calls = 12;
+          }
+
+          playCuckooCalls(calls);
+        }
+
+        return;
+      }
+
       playSequence(minutes);
 
       if (minutes === 0) {
@@ -511,7 +566,12 @@
       const minutes = now.getMinutes();
       const seconds = now.getSeconds();
 
-      if (![0, 15, 30, 45].includes(minutes) || seconds > 1) {
+      const validMinutes =
+        getStyle() === "cuckoo"
+          ? [0, 30]
+          : [0, 15, 30, 45];
+
+      if (!validMinutes.includes(minutes) || seconds > 1) {
         return;
       }
 
@@ -527,7 +587,7 @@
       }
 
       lastChimeKey = key;
-      playQuarter(minutes, now.getHours());
+      playAutomatic(minutes, now.getHours());
     }
 
     function updateClock() {
@@ -554,7 +614,7 @@
       enabled = true;
       muted = false;
       muteButton.textContent = "Mute";
-      statusDisplay.textContent = getName() + " are on.";
+      statusDisplay.textContent = getName() + " is on.";
     });
 
     testButton.addEventListener("click", () => {
@@ -562,6 +622,11 @@
       muted = false;
       muteButton.textContent = "Mute";
       statusDisplay.textContent = "Playing " + getName() + ".";
+
+      if (getStyle() === "cuckoo") {
+        playCuckooCalls(2);
+        return;
+      }
 
       playSequence(0);
 
@@ -595,6 +660,14 @@
     });
 
     soundChoice.addEventListener("change", () => {
+      const cuckooSelected = getStyle() === "cuckoo";
+
+      clockIcon.textContent = cuckooSelected ? "🐦" : "🔔";
+
+      scheduleNote.textContent = cuckooSelected
+        ? "Cuckoo once at the half-hour and counts the hour on the hour."
+        : "Press Start Chimes once for automatic quarter-hour chimes.";
+
       statusDisplay.textContent =
         getName() + " selected. Press Test Selected Chime.";
     });
