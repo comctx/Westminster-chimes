@@ -1,162 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clock Tower Chimes</title>
 
-  <title>Clock Tower Chimes</title>
+<style>
+*{box-sizing:border-box}
 
-  <style>
-    * { box-sizing: border-box; }
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  color:white;
+  font-family:Arial,sans-serif;
+  background:radial-gradient(circle at top,#344d68,#172238 55%,#080c14);
+}
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      color: white;
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #344d68, #172238 55%, #080c14);
-    }
+.clock{
+  width:100%;
+  max-width:540px;
+  padding:32px 24px;
+  text-align:center;
+  border:3px solid #d4af37;
+  border-radius:24px;
+  background:rgba(8,14,28,.94);
+  box-shadow:0 18px 55px rgba(0,0,0,.65);
+}
 
-    .clock {
-      width: 100%;
-      max-width: 540px;
-      padding: 32px 24px;
-      text-align: center;
-      border: 3px solid #d4af37;
-      border-radius: 24px;
-      background: rgba(8, 14, 28, 0.94);
-      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.65);
-    }
+h1{
+  margin:0 0 10px;
+  color:#f3cf62;
+  font:bold 38px Georgia,serif;
+}
 
-    h1 {
-      margin: 0 0 10px;
-      color: #f3cf62;
-      font: bold 38px Georgia, serif;
-    }
+.subtitle{
+  margin-bottom:16px;
+  color:#c9d4e5;
+  font-size:17px;
+}
 
-    .subtitle {
-      margin-bottom: 20px;
-      color: #c9d4e5;
-      font-size: 17px;
-    }
+.bell{
+  margin:8px 0;
+  font-size:70px;
+}
 
-    .bell {
-      margin: 10px 0;
-      font-size: 76px;
-    }
+#time{
+  margin:8px 0;
+  font-size:clamp(48px,13vw,76px);
+  font-weight:bold;
+}
 
-    #time {
-      margin: 10px 0;
-      font-size: clamp(48px, 13vw, 76px);
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
+#date{
+  margin-bottom:20px;
+  color:#d6deea;
+  font-size:20px;
+}
 
-    #date {
-      margin-bottom: 24px;
-      color: #d6deea;
-      font-size: 20px;
-    }
+.settings{
+  display:grid;
+  gap:12px;
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #596982;
+  border-radius:14px;
+  background:rgba(255,255,255,.05);
+}
 
-    .sound-box {
-      margin: 16px 0;
-      padding: 16px;
-      border: 1px solid #596982;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.05);
-    }
+label{
+  display:block;
+  margin-bottom:7px;
+  color:#e4eaf3;
+  font-weight:bold;
+}
 
-    label {
-      display: block;
-      margin-bottom: 9px;
-      color: #e4eaf3;
-      font-weight: bold;
-    }
+select{
+  width:100%;
+  min-height:48px;
+  padding:10px;
+  border:2px solid #d4af37;
+  border-radius:10px;
+  color:#172238;
+  background:white;
+  font-size:17px;
+  font-weight:bold;
+}
 
-    select {
-      width: 100%;
-      min-height: 48px;
-      padding: 10px;
-      border: 2px solid #d4af37;
-      border-radius: 10px;
-      color: #172238;
-      background: white;
-      font-size: 17px;
-      font-weight: bold;
-    }
+#status{
+  min-height:25px;
+  margin:18px 0;
+  color:#f3cf62;
+  font-size:17px;
+}
 
-    #status {
-      min-height: 25px;
-      margin: 18px 0;
-      color: #f3cf62;
-      font-size: 17px;
-    }
+.buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
-    .buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+button{
+  min-height:54px;
+  padding:12px;
+  border:0;
+  border-radius:12px;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+}
 
-    button {
-      min-height: 54px;
-      padding: 12px;
-      border: 0;
-      border-radius: 12px;
-      color: white;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+#startButton{color:#111827;background:#f3cf62}
+#testButton{background:#276749}
+#stopButton{background:#9b2c2c}
+#muteButton{background:#35465f}
 
-    #startButton {
-      color: #111827;
-      background: #f3cf62;
-    }
+.volume-box{
+  margin-top:24px;
+  padding-top:18px;
+  border-top:1px solid #4b5870;
+}
 
-    #testButton { background: #276749; }
-    #stopButton { background: #9b2c2c; }
-    #muteButton { background: #35465f; }
+input[type=range]{width:100%}
 
-    .volume-box {
-      margin-top: 24px;
-      padding-top: 18px;
-      border-top: 1px solid #4b5870;
-    }
+.note{
+  margin-top:20px;
+  color:#aebbd0;
+  font-size:14px;
+  line-height:1.5;
+}
 
-    input[type="range"] { width: 100%; }
-
-    .note {
-      margin-top: 22px;
-      color: #aebbd0;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 420px) {
-      .buttons { grid-template-columns: 1fr; }
-      h1 { font-size: 31px; }
-    }
-  </style>
+@media(max-width:420px){
+  .buttons{grid-template-columns:1fr}
+  h1{font-size:31px}
+}
+</style>
 </head>
 
 <body>
-  <main class="clock">
-    <h1>Clock Tower Chimes</h1>
+<main class="clock">
+  <h1>Clock Tower Chimes</h1>
+  <div class="subtitle">Traditional clocks and tower melodies</div>
+  <div class="bell" id="clockIcon">🔔</div>
 
-    <div class="subtitle">Traditional clocks and tower melodies</div>
-    <div class="bell" id="clockIcon">🔔</div>
+  <div id="time">--:--:--</div>
+  <div id="date">Loading date…</div>
 
-    <div id="time">--:--:--</div>
-    <div id="date">Loading date…</div>
-
-    <div class="sound-box">
+  <div class="settings">
+    <div>
       <label for="soundChoice">Choose a chime</label>
-
       <select id="soundChoice">
         <option value="westminster">Westminster Tower Bells</option>
         <option value="bigben">Big Ben — London</option>
@@ -167,604 +162,511 @@
       </select>
     </div>
 
-    <div id="status">Press Start Chimes to begin.</div>
-
-    <div class="buttons">
-      <button id="startButton">Start Chimes</button>
-      <button id="testButton">Test Selected Chime</button>
-      <button id="stopButton">Stop Chimes</button>
-      <button id="muteButton">Mute</button>
+    <div>
+      <label for="scheduleChoice">Chime schedule</label>
+      <select id="scheduleChoice">
+        <option value="quarters">Every Quarter Hour</option>
+        <option value="hourly">On the Hour Only</option>
+      </select>
     </div>
-
-    <div class="volume-box">
-      <label for="volume">
-        Volume: <span id="volumeValue">60</span>%
-      </label>
-
-      <input id="volume" type="range" min="0" max="100" value="60">
-    </div>
-
-    <div class="note" id="scheduleNote">
-      Press Start Chimes once for automatic quarter-hour chimes.
-    </div>
-  </main>
-
-  <script>
-    const $ = id => document.getElementById(id);
-
-    const timeDisplay = $("time");
-    const dateDisplay = $("date");
-    const statusDisplay = $("status");
-    const soundChoice = $("soundChoice");
-    const startButton = $("startButton");
-    const testButton = $("testButton");
-    const stopButton = $("stopButton");
-    const muteButton = $("muteButton");
-    const volumeSlider = $("volume");
-    const volumeValue = $("volumeValue");
-    const clockIcon = $("clockIcon");
-    const scheduleNote = $("scheduleNote");
-
-    let audioContext;
-    let masterGain;
-    let enabled = false;
-    let muted = false;
-    let lastChimeKey = "";
-
-    const names = {
-      westminster: "Westminster Tower Bells",
-      bigben: "Big Ben",
-      whittington: "Whittington Chimes",
-      stmichael: "St. Michael Chimes",
-      canterbury: "Canterbury Chimes",
-      cuckoo: "Black Forest Cuckoo Clock"
-    };
-
-    const noteSets = {
-      westminster: {
-        1: 246.94,
-        2: 329.63,
-        3: 369.99,
-        4: 415.30,
-        strike: 164.81
-      },
-
-      whittington: {
-        1: 293.66,
-        2: 329.63,
-        3: 369.99,
-        4: 392.00,
-        5: 440.00,
-        6: 493.88,
-        7: 554.37,
-        8: 587.33,
-        strike: 146.83
-      },
-
-      stmichael: {
-        1: 349.23,
-        2: 392.00,
-        3: 440.00,
-        4: 466.16,
-        5: 523.25,
-        6: 587.33,
-        7: 659.25,
-        8: 698.46,
-        strike: 174.61
-      },
-
-      canterbury: {
-        1: 293.66,
-        2: 329.63,
-        3: 369.99,
-        4: 392.00,
-        5: 440.00,
-        6: 493.88,
-        strike: 146.83
-      }
-    };
-
-    const melodies = {
-      westminster: {
-        15: [[4, 3, 2, 1]],
-
-        30: [
-          [2, 4, 3, 1],
-          [2, 3, 4, 2]
-        ],
-
-        45: [
-          [4, 2, 3, 1],
-          [1, 3, 4, 2],
-          [4, 3, 2, 1]
-        ],
-
-        0: [
-          [2, 4, 3, 1],
-          [2, 3, 4, 2],
-          [4, 2, 3, 1],
-          [1, 3, 4, 2]
-        ]
-      },
-
-      whittington: {
-        15: [
-          [8, 7, 6, 5, 4, 3, 2, 1]
-        ],
-
-        30: [
-          [8, 2, 7, 3, 6, 4, 5, 1],
-          [8, 6, 4, 2, 7, 5, 3, 1]
-        ],
-
-        45: [
-          [8, 7, 4, 3, 6, 5, 2, 1],
-          [2, 4, 6, 8, 5, 2, 3, 1],
-          [8, 7, 6, 5, 4, 3, 2, 1]
-        ],
-
-        0: [
-          [8, 2, 7, 3, 6, 4, 5, 1],
-          [8, 6, 4, 2, 7, 5, 3, 1],
-          [8, 7, 4, 3, 6, 5, 2, 1],
-          [2, 4, 6, 8, 5, 2, 3, 1]
-        ]
-      },
-
-      stmichael: {
-        15: [
-          [8, 7, 6, 5, 4, 3, 2, 1]
-        ],
-
-        30: [
-          [8, 2, 3, 4, 7, 5, 6, 1],
-          [5, 4, 3, 6, 2, 7, 8, 1]
-        ],
-
-        45: [
-          [7, 8, 3, 4, 2, 5, 6, 1],
-          [5, 7, 3, 8, 4, 2, 6, 1],
-          [8, 7, 6, 5, 4, 3, 2, 1]
-        ],
-
-        0: [
-          [8, 2, 3, 4, 7, 5, 6, 1],
-          [5, 4, 3, 6, 2, 7, 8, 1],
-          [7, 8, 3, 4, 2, 5, 6, 1],
-          [5, 7, 3, 8, 4, 2, 6, 1]
-        ]
-      },
-
-      canterbury: {
-        15: [
-          [6, 4, 2, 5, 3, 1]
-        ],
-
-        30: [
-          [2, 4, 6, 3, 1, 5],
-          [4, 6, 2, 5, 1, 3]
-        ],
-
-        45: [
-          [1, 6, 4, 2, 3, 5],
-          [4, 6, 2, 5, 1, 3],
-          [6, 4, 2, 3, 5, 1]
-        ],
-
-        0: [
-          [3, 1, 6, 4, 2, 5],
-          [4, 6, 2, 5, 1, 3],
-          [3, 1, 6, 4, 2, 5],
-          [4, 6, 5, 3, 2, 1]
-        ]
-      }
-    };
-
-    function getStyle() {
-      return soundChoice.value;
-    }
-
-    function getName() {
-      return names[getStyle()];
-    }
-
-    function getVolume() {
-      return muted ? 0 : Number(volumeSlider.value) / 100;
-    }
-
-    function prepareAudio() {
-      if (!audioContext) {
-        const AudioContext =
-          window.AudioContext || window.webkitAudioContext;
-
-        audioContext = new AudioContext();
-        masterGain = audioContext.createGain();
-        masterGain.connect(audioContext.destination);
-      }
-
-      if (audioContext.state === "suspended") {
-        audioContext.resume();
-      }
-
-      masterGain.gain.setValueAtTime(
-        getVolume(),
-        audioContext.currentTime
-      );
-    }
-
-    function getMusicStyle() {
-      return getStyle() === "bigben"
-        ? "westminster"
-        : getStyle();
-    }
-
-    function makeSequence(minutes) {
-      const style = getMusicStyle();
-      const groups = melodies[style][minutes];
-      const sequence = [];
-
-      const spacing = style === "westminster" ? 0.82 : 0.56;
-      const gap = style === "westminster" ? 3.65 : 5.05;
-
-      groups.forEach((group, groupNumber) => {
-        group.forEach((note, noteNumber) => {
-          sequence.push([
-            note,
-            groupNumber * gap + noteNumber * spacing
-          ]);
-        });
-      });
-
-      return {
-        sequence,
-        notes: noteSets[style]
-      };
-    }
-
-    function bellSettings(hourBell) {
-      if (getStyle() === "bigben") {
-        return {
-          pitch: hourBell ? 0.79 : 0.88,
-          duration: hourBell ? 8.2 : 6.2
-        };
-      }
-
-      return {
-        pitch: 1,
-        duration: hourBell ? 6.8 : 4.8
-      };
-    }
-
-    function playBell(frequency, delay, hourBell = false) {
-      if (!audioContext || muted) {
-        return;
-      }
-
-      const settings = bellSettings(hourBell);
-      const start = audioContext.currentTime + delay;
-
-      const harmonics = [
-        [0.50, 0.29, 1.00],
-        [1.00, 0.49, 1.00],
-        [1.49, 0.19, 0.78],
-        [2.00, 0.14, 0.61],
-        [2.72, 0.09, 0.46],
-        [3.68, 0.05, 0.33]
-      ];
-
-      harmonics.forEach(([ratio, amount, fade]) => {
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-
-        oscillator.type = "sine";
-
-        oscillator.frequency.setValueAtTime(
-          frequency * settings.pitch * ratio,
-          start
-        );
-
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(amount, start + 0.03);
-
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          start + settings.duration * fade
-        );
-
-        oscillator.connect(gain);
-        gain.connect(masterGain);
-
-        oscillator.start(start);
-        oscillator.stop(start + settings.duration + 0.2);
-      });
-    }
-
-    function playSequence(minutes) {
-      prepareAudio();
-
-      const music = makeSequence(minutes);
-
-      music.sequence.forEach(([note, delay]) => {
-        playBell(music.notes[note], delay);
-      });
-    }
-
-    function sequenceLength(minutes) {
-      const sequence = makeSequence(minutes).sequence;
-      return sequence[sequence.length - 1][1] + 2.4;
-    }
-
-    function strikeHour(hour, delay) {
-      const style = getMusicStyle();
-      const strikeNote = noteSets[style].strike;
-
-      let strikes = hour % 12;
-
-      if (strikes === 0) {
-        strikes = 12;
-      }
-
-      const spacing = getStyle() === "bigben" ? 3.8 : 3.15;
-
-      for (let i = 0; i < strikes; i++) {
-        playBell(strikeNote, delay + i * spacing, true);
-      }
-    }
-
-    function createBreathNoise(start, duration) {
-      const sampleCount =
-        Math.floor(audioContext.sampleRate * duration);
-
-      const buffer = audioContext.createBuffer(
-        1,
-        sampleCount,
-        audioContext.sampleRate
-      );
-
-      const data = buffer.getChannelData(0);
-
-      for (let i = 0; i < sampleCount; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-
-      const noise = audioContext.createBufferSource();
-      const filter = audioContext.createBiquadFilter();
-      const gain = audioContext.createGain();
-
-      noise.buffer = buffer;
-      filter.type = "bandpass";
-      filter.frequency.value = 850;
-      filter.Q.value = 1.3;
-
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.linearRampToValueAtTime(0.055, start + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterGain);
-
-      noise.start(start);
-      noise.stop(start + duration);
-    }
-
-    function playWoodenWhistle(frequency, start, duration) {
-      const tone = audioContext.createOscillator();
-      const overtone = audioContext.createOscillator();
-      const overtoneGain = audioContext.createGain();
-      const filter = audioContext.createBiquadFilter();
-      const gain = audioContext.createGain();
-
-      tone.type = "triangle";
-      overtone.type = "sine";
-
-      tone.frequency.setValueAtTime(frequency * 0.975, start);
-      tone.frequency.exponentialRampToValueAtTime(
-        frequency,
-        start + 0.08
-      );
-
-      overtone.frequency.setValueAtTime(frequency * 2, start);
-      overtoneGain.gain.value = 0.12;
-
-      filter.type = "lowpass";
-      filter.frequency.value = 1450;
-      filter.Q.value = 2.5;
-
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.linearRampToValueAtTime(0.58, start + 0.055);
-      gain.gain.setValueAtTime(0.55, start + duration * 0.62);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-      tone.connect(filter);
-      overtone.connect(overtoneGain);
-      overtoneGain.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterGain);
-
-      tone.start(start);
-      overtone.start(start);
-
-      tone.stop(start + duration + 0.05);
-      overtone.stop(start + duration + 0.05);
-
-      createBreathNoise(start, duration);
-    }
-
-    function playOneCuckoo(delay) {
-      prepareAudio();
-
-      const start = audioContext.currentTime + delay;
-
-      playWoodenWhistle(659.25, start, 0.34);
-      playWoodenWhistle(523.25, start + 0.39, 0.62);
-    }
-
-    function playCuckooCalls(numberOfCalls) {
-      for (let i = 0; i < numberOfCalls; i++) {
-        playOneCuckoo(i * 1.45);
-      }
-    }
-
-    function playAutomatic(minutes, hour) {
-      if (!enabled || muted) {
-        return;
-      }
-
-      statusDisplay.textContent = "Playing " + getName() + ".";
-
-      if (getStyle() === "cuckoo") {
-        if (minutes === 30) {
-          playCuckooCalls(1);
-        }
-
-        if (minutes === 0) {
-          let calls = hour % 12;
-
-          if (calls === 0) {
-            calls = 12;
-          }
-
-          playCuckooCalls(calls);
-        }
-
-        return;
-      }
-
-      playSequence(minutes);
-
-      if (minutes === 0) {
-        strikeHour(hour, sequenceLength(0));
-      }
-    }
-
-    function checkChime(now) {
-      if (!enabled) {
-        return;
-      }
-
-      const minutes = now.getMinutes();
-      const seconds = now.getSeconds();
-
-      const validMinutes =
-        getStyle() === "cuckoo"
-          ? [0, 30]
-          : [0, 15, 30, 45];
-
-      if (!validMinutes.includes(minutes) || seconds > 1) {
-        return;
-      }
-
-      const key =
-        now.getFullYear() + "-" +
-        now.getMonth() + "-" +
-        now.getDate() + "-" +
-        now.getHours() + "-" +
-        minutes;
-
-      if (key === lastChimeKey) {
-        return;
-      }
-
-      lastChimeKey = key;
-      playAutomatic(minutes, now.getHours());
-    }
-
-    function updateClock() {
-      const now = new Date();
-
-      timeDisplay.textContent = now.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-
-      dateDisplay.textContent = now.toLocaleDateString([], {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric"
-      });
-
-      checkChime(now);
-    }
-
-    startButton.addEventListener("click", () => {
-      prepareAudio();
-      enabled = true;
-      muted = false;
-      muteButton.textContent = "Mute";
-      statusDisplay.textContent = getName() + " is on.";
+  </div>
+
+  <div id="status">Press Start Chimes to begin.</div>
+
+  <div class="buttons">
+    <button id="startButton">Start Chimes</button>
+    <button id="testButton">Test Selected Chime</button>
+    <button id="stopButton">Stop Chimes</button>
+    <button id="muteButton">Mute</button>
+  </div>
+
+  <div class="volume-box">
+    <label for="volume">
+      Volume: <span id="volumeValue">60</span>%
+    </label>
+    <input id="volume" type="range" min="0" max="100" value="60">
+  </div>
+
+  <div class="note" id="scheduleNote">
+    Select a chime and schedule, then press Start Chimes.
+  </div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+
+const timeDisplay=$("time");
+const dateDisplay=$("date");
+const statusDisplay=$("status");
+const soundChoice=$("soundChoice");
+const scheduleChoice=$("scheduleChoice");
+const startButton=$("startButton");
+const testButton=$("testButton");
+const stopButton=$("stopButton");
+const muteButton=$("muteButton");
+const volumeSlider=$("volume");
+const volumeValue=$("volumeValue");
+const clockIcon=$("clockIcon");
+const scheduleNote=$("scheduleNote");
+
+let audioContext;
+let masterGain;
+let enabled=false;
+let muted=false;
+let lastChimeKey="";
+
+const names={
+  westminster:"Westminster Tower Bells",
+  bigben:"Big Ben",
+  whittington:"Whittington Chimes",
+  stmichael:"St. Michael Chimes",
+  canterbury:"Canterbury Chimes",
+  cuckoo:"Black Forest Cuckoo Clock"
+};
+
+const notes={
+  westminster:{
+    1:246.94,2:329.63,3:369.99,4:415.30,strike:164.81
+  },
+  whittington:{
+    1:293.66,2:329.63,3:369.99,4:392,
+    5:440,6:493.88,7:554.37,8:587.33,strike:146.83
+  },
+  stmichael:{
+    1:349.23,2:392,3:440,4:466.16,
+    5:523.25,6:587.33,7:659.25,8:698.46,strike:174.61
+  },
+  canterbury:{
+    1:293.66,2:329.63,3:369.99,
+    4:392,5:440,6:493.88,strike:146.83
+  }
+};
+
+const melodies={
+  westminster:{
+    15:[[4,3,2,1]],
+    30:[[2,4,3,1],[2,3,4,2]],
+    45:[[4,2,3,1],[1,3,4,2],[4,3,2,1]],
+    0:[[2,4,3,1],[2,3,4,2],[4,2,3,1],[1,3,4,2]]
+  },
+
+  whittington:{
+    15:[[8,7,6,5,4,3,2,1]],
+    30:[
+      [8,2,7,3,6,4,5,1],
+      [8,6,4,2,7,5,3,1]
+    ],
+    45:[
+      [8,7,4,3,6,5,2,1],
+      [2,4,6,8,5,2,3,1],
+      [8,7,6,5,4,3,2,1]
+    ],
+    0:[
+      [8,2,7,3,6,4,5,1],
+      [8,6,4,2,7,5,3,1],
+      [8,7,4,3,6,5,2,1],
+      [2,4,6,8,5,2,3,1]
+    ]
+  },
+
+  stmichael:{
+    15:[[8,7,6,5,4,3,2,1]],
+    30:[
+      [8,2,3,4,7,5,6,1],
+      [5,4,3,6,2,7,8,1]
+    ],
+    45:[
+      [7,8,3,4,2,5,6,1],
+      [5,7,3,8,4,2,6,1],
+      [8,7,6,5,4,3,2,1]
+    ],
+    0:[
+      [8,2,3,4,7,5,6,1],
+      [5,4,3,6,2,7,8,1],
+      [7,8,3,4,2,5,6,1],
+      [5,7,3,8,4,2,6,1]
+    ]
+  },
+
+  canterbury:{
+    15:[[6,4,2,5,3,1]],
+    30:[
+      [2,4,6,3,1,5],
+      [4,6,2,5,1,3]
+    ],
+    45:[
+      [1,6,4,2,3,5],
+      [4,6,2,5,1,3],
+      [6,4,2,3,5,1]
+    ],
+    0:[
+      [3,1,6,4,2,5],
+      [4,6,2,5,1,3],
+      [3,1,6,4,2,5],
+      [4,6,5,3,2,1]
+    ]
+  }
+};
+
+function getStyle(){
+  return soundChoice.value;
+}
+
+function getMusicStyle(){
+  return getStyle()==="bigben"?"westminster":getStyle();
+}
+
+function getName(){
+  return names[getStyle()];
+}
+
+function getVolume(){
+  return muted?0:Number(volumeSlider.value)/100;
+}
+
+function prepareAudio(){
+  if(!audioContext){
+    const AudioContext=window.AudioContext||window.webkitAudioContext;
+    audioContext=new AudioContext();
+    masterGain=audioContext.createGain();
+    masterGain.connect(audioContext.destination);
+  }
+
+  if(audioContext.state==="suspended"){
+    audioContext.resume();
+  }
+
+  masterGain.gain.setValueAtTime(getVolume(),audioContext.currentTime);
+}
+
+function makeSequence(minutes){
+  const style=getMusicStyle();
+  const groups=melodies[style][minutes];
+  const sequence=[];
+  const spacing=style==="westminster"?.82:.56;
+  const gap=style==="westminster"?3.65:5.05;
+
+  groups.forEach((group,g)=>{
+    group.forEach((note,n)=>{
+      sequence.push([note,g*gap+n*spacing]);
     });
+  });
 
-    testButton.addEventListener("click", () => {
-      prepareAudio();
-      muted = false;
-      muteButton.textContent = "Mute";
-      statusDisplay.textContent = "Playing " + getName() + ".";
+  return {sequence,noteSet:notes[style]};
+}
 
-      if (getStyle() === "cuckoo") {
-        playCuckooCalls(2);
-        return;
-      }
+function playBell(frequency,delay,hourBell=false){
+  if(!audioContext||muted)return;
 
-      playSequence(0);
+  const big=getStyle()==="bigben";
+  const pitch=big?(hourBell?.79:.88):1;
+  const duration=big?(hourBell?8.2:6.2):(hourBell?6.8:4.8);
+  const start=audioContext.currentTime+delay;
 
-      const style = getMusicStyle();
+  const harmonics=[
+    [.5,.29,1],
+    [1,.49,1],
+    [1.49,.19,.78],
+    [2,.14,.61],
+    [2.72,.09,.46],
+    [3.68,.05,.33]
+  ];
 
-      playBell(
-        noteSets[style].strike,
-        sequenceLength(0),
-        true
-      );
-    });
+  harmonics.forEach(([ratio,amount,fade])=>{
+    const oscillator=audioContext.createOscillator();
+    const gain=audioContext.createGain();
 
-    stopButton.addEventListener("click", () => {
-      enabled = false;
-      statusDisplay.textContent = "Automatic chimes are stopped.";
-    });
+    oscillator.type="sine";
+    oscillator.frequency.setValueAtTime(
+      frequency*pitch*ratio,start
+    );
 
-    muteButton.addEventListener("click", () => {
-      prepareAudio();
-      muted = !muted;
-      muteButton.textContent = muted ? "Unmute" : "Mute";
+    gain.gain.setValueAtTime(.0001,start);
+    gain.gain.exponentialRampToValueAtTime(amount,start+.03);
+    gain.gain.exponentialRampToValueAtTime(
+      .0001,start+duration*fade
+    );
 
-      masterGain.gain.setValueAtTime(
-        getVolume(),
-        audioContext.currentTime
-      );
+    oscillator.connect(gain);
+    gain.connect(masterGain);
 
-      statusDisplay.textContent = muted
-        ? "Sound is muted."
-        : "Sound is unmuted.";
-    });
+    oscillator.start(start);
+    oscillator.stop(start+duration+.2);
+  });
+}
 
-    soundChoice.addEventListener("change", () => {
-      const cuckooSelected = getStyle() === "cuckoo";
+function playSequence(minutes){
+  prepareAudio();
+  const music=makeSequence(minutes);
 
-      clockIcon.textContent = cuckooSelected ? "🐦" : "🔔";
+  music.sequence.forEach(([note,delay])=>{
+    playBell(music.noteSet[note],delay);
+  });
+}
 
-      scheduleNote.textContent = cuckooSelected
-        ? "Cuckoo once at the half-hour and counts the hour on the hour."
-        : "Press Start Chimes once for automatic quarter-hour chimes.";
+function sequenceLength(minutes){
+  const sequence=makeSequence(minutes).sequence;
+  return sequence[sequence.length-1][1]+2.4;
+}
 
-      statusDisplay.textContent =
-        getName() + " selected. Press Test Selected Chime.";
-    });
+function strikeHour(hour,delay){
+  const style=getMusicStyle();
+  const strikeNote=notes[style].strike;
+  let strikes=hour%12||12;
+  const spacing=getStyle()==="bigben"?3.8:3.15;
 
-    volumeSlider.addEventListener("input", () => {
-      volumeValue.textContent = volumeSlider.value;
+  for(let i=0;i<strikes;i++){
+    playBell(strikeNote,delay+i*spacing,true);
+  }
+}
 
-      if (masterGain && audioContext) {
-        masterGain.gain.setValueAtTime(
-          getVolume(),
-          audioContext.currentTime
-        );
-      }
-    });
+function createBreathNoise(start,duration){
+  const length=Math.floor(audioContext.sampleRate*duration);
+  const buffer=audioContext.createBuffer(
+    1,length,audioContext.sampleRate
+  );
 
-    updateClock();
-    setInterval(updateClock, 500);
-  </script>
+  const data=buffer.getChannelData(0);
+
+  for(let i=0;i<length;i++){
+    data[i]=Math.random()*2-1;
+  }
+
+  const noise=audioContext.createBufferSource();
+  const filter=audioContext.createBiquadFilter();
+  const gain=audioContext.createGain();
+
+  noise.buffer=buffer;
+  filter.type="bandpass";
+  filter.frequency.value=850;
+  filter.Q.value=1.3;
+
+  gain.gain.setValueAtTime(.0001,start);
+  gain.gain.linearRampToValueAtTime(.055,start+.04);
+  gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  noise.start(start);
+  noise.stop(start+duration);
+}
+
+function playWoodenWhistle(frequency,start,duration){
+  const tone=audioContext.createOscillator();
+  const overtone=audioContext.createOscillator();
+  const overtoneGain=audioContext.createGain();
+  const filter=audioContext.createBiquadFilter();
+  const gain=audioContext.createGain();
+
+  tone.type="triangle";
+  overtone.type="sine";
+
+  tone.frequency.setValueAtTime(frequency*.975,start);
+  tone.frequency.exponentialRampToValueAtTime(
+    frequency,start+.08
+  );
+
+  overtone.frequency.value=frequency*2;
+  overtoneGain.gain.value=.12;
+
+  filter.type="lowpass";
+  filter.frequency.value=1450;
+  filter.Q.value=2.5;
+
+  gain.gain.setValueAtTime(.0001,start);
+  gain.gain.linearRampToValueAtTime(.58,start+.055);
+  gain.gain.setValueAtTime(.55,start+duration*.62);
+  gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+
+  tone.connect(filter);
+  overtone.connect(overtoneGain);
+  overtoneGain.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  tone.start(start);
+  overtone.start(start);
+  tone.stop(start+duration+.05);
+  overtone.stop(start+duration+.05);
+
+  createBreathNoise(start,duration);
+}
+
+function playOneCuckoo(delay){
+  prepareAudio();
+  const start=audioContext.currentTime+delay;
+
+  playWoodenWhistle(659.25,start,.34);
+  playWoodenWhistle(523.25,start+.39,.62);
+}
+
+function playCuckooCalls(count){
+  for(let i=0;i<count;i++){
+    playOneCuckoo(i*1.45);
+  }
+}
+
+function playAutomatic(minutes,hour){
+  if(!enabled||muted)return;
+
+  statusDisplay.textContent="Playing "+getName()+".";
+
+  if(getStyle()==="cuckoo"){
+    if(minutes===30&&scheduleChoice.value==="quarters"){
+      playCuckooCalls(1);
+    }
+
+    if(minutes===0){
+      playCuckooCalls(hour%12||12);
+    }
+
+    return;
+  }
+
+  playSequence(minutes);
+
+  if(minutes===0){
+    strikeHour(hour,sequenceLength(0));
+  }
+}
+
+function checkChime(now){
+  if(!enabled)return;
+
+  const minutes=now.getMinutes();
+  const seconds=now.getSeconds();
+
+  let validMinutes;
+
+  if(scheduleChoice.value==="hourly"){
+    validMinutes=[0];
+  }else if(getStyle()==="cuckoo"){
+    validMinutes=[0,30];
+  }else{
+    validMinutes=[0,15,30,45];
+  }
+
+  if(!validMinutes.includes(minutes)||seconds>1)return;
+
+  const key=
+    now.getFullYear()+"-"+
+    now.getMonth()+"-"+
+    now.getDate()+"-"+
+    now.getHours()+"-"+
+    minutes;
+
+  if(key===lastChimeKey)return;
+
+  lastChimeKey=key;
+  playAutomatic(minutes,now.getHours());
+}
+
+function updateClock(){
+  const now=new Date();
+
+  timeDisplay.textContent=now.toLocaleTimeString([],{
+    hour:"numeric",
+    minute:"2-digit",
+    second:"2-digit"
+  });
+
+  dateDisplay.textContent=now.toLocaleDateString([],{
+    weekday:"long",
+    month:"long",
+    day:"numeric",
+    year:"numeric"
+  });
+
+  checkChime(now);
+}
+
+function updateDescription(){
+  const cuckoo=getStyle()==="cuckoo";
+  const hourly=scheduleChoice.value==="hourly";
+
+  clockIcon.textContent=cuckoo?"🐦":"🔔";
+
+  if(hourly){
+    scheduleNote.textContent=cuckoo
+      ?"The cuckoo counts the hour at the top of each hour."
+      :"The full selected melody and hour strikes play only on the hour.";
+  }else{
+    scheduleNote.textContent=cuckoo
+      ?"Cuckoo once at the half-hour and counts the hour on the hour."
+      :"The selected melody plays every quarter hour.";
+  }
+
+  statusDisplay.textContent=
+    getName()+" selected. Press Start Chimes.";
+}
+
+startButton.addEventListener("click",()=>{
+  prepareAudio();
+  enabled=true;
+  muted=false;
+  muteButton.textContent="Mute";
+  statusDisplay.textContent=getName()+" is on.";
+});
+
+testButton.addEventListener("click",()=>{
+  prepareAudio();
+  muted=false;
+  muteButton.textContent="Mute";
+  statusDisplay.textContent="Playing "+getName()+".";
+
+  if(getStyle()==="cuckoo"){
+    playCuckooCalls(2);
+    return;
+  }
+
+  playSequence(0);
+  const style=getMusicStyle();
+
+  playBell(
+    notes[style].strike,
+    sequenceLength(0),
+    true
+  );
+});
+
+stopButton.addEventListener("click",()=>{
+  enabled=false;
+  statusDisplay.textContent="Automatic chimes are stopped.";
+});
+
+muteButton.addEventListener("click",()=>{
+  prepareAudio();
+  muted=!muted;
+  muteButton.textContent=muted?"Unmute":"Mute";
+
+  masterGain.gain.setValueAtTime(
+    getVolume(),
+    audioContext.currentTime
+  );
+
+  statusDisplay.textContent=muted
+    ?"Sound is muted."
+    :"Sound is unmuted.";
+});
+
+soundChoice.addEventListener("change",updateDescription);
+scheduleChoice.addEventListener("change",updateDescription);
+
+volumeSlider.addEventListener("input",()=>{
+  volumeValue.textContent=volumeSlider.value;
+
+  if(masterGain&&audioContext){
+    masterGain.gain.setValueAtTime(
+      getVolume(),
+      audioContext.currentTime
+    );
+  }
+});
+
+updateClock();
+setInterval(updateClock,500);
+</script>
 </body>
 </html>
