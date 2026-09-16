@@ -42,7 +42,8 @@ workflows:
 
       - name: Get Apple signing files
         script: |
-              keychain initialize
+    
+          keychain initialize
           printf '%s' "$CERTIFICATE_PRIVATE_KEY" > /tmp/ios_distribution_private_key
           chmod 600 /tmp/ios_distribution_private_key
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --certificate-key @file:/tmp/ios_distribution_private_key
