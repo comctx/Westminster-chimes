@@ -7,7 +7,7 @@ workflows:
     integrations:
       app_store_connect: Codemagic
 
-    environment:     
+    environment:
       groups:
         - appstore_credentials
       node: latest
@@ -19,14 +19,18 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          set -eu
           npm install
+          node --check generate-chimes.cjs
 
-      - name: Create iOS project
+      - name: Create iOS project and chime sounds
         script: |
+          set -eu
           rm -rf ios www
           mkdir -p www
           cp index.html www/index.html
           if [ -f support.html ]; then cp support.html www/support.html; fi
+          node generate-chimes.cjs www/sounds
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.donaldreckman.westminsterchimes",
@@ -35,29 +39,100 @@ workflows:
           }
           EOF
           npx cap add ios
-
-      - name: Sync Westminster Chimes
-        script: |
           npx cap sync ios
+
+      - name: Include notification sounds and set build number
+        script: |
+          set -eu
+          mkdir -p ios/App/ChimeSounds
+          cp www/sounds/*.wav ios/App/ChimeSounds/
+          if ! gem list -i xcodeproj >/dev/null; then
+            gem install xcodeproj --no-document
+          fi
+          ruby <<'RUBY'
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('ios/App/App.xcodeproj')
+          target = project.targets.find { |item| item.name == 'App' }
+          abort 'App target not found' unless target
+          group = project.main_group.new_group('ChimeSounds', 'ChimeSounds')
+          files = Dir.glob('ios/App/ChimeSounds/*.wav').sort
+          abort 'Expected 88 chime recordings' unless files.length == 88
+          files.each do |file|
+            reference = group.new_file(File.basename(file))
+            target.resources_build_phase.add_file_reference(reference)
+          end
+          project.save
+          RUBY
+          CHIMES_BUILD_NUMBER=$(( ${PROJECT_BUILD_NUMBER:?Missing project build number} + 2 ))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist
+          echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
 
       - name: Get Apple signing files
         script: |
-    
+          set -eu
           keychain initialize
+          umask 077
           printf '%s' "$CERTIFICATE_PRIVATE_KEY" > /tmp/ios_distribution_private_key
-          chmod 600 /tmp/ios_distribution_private_key
+          trap 'rm -f /tmp/ios_distribution_private_key' EXIT
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --certificate-key @file:/tmp/ios_distribution_private_key
           keychain add-certificates
 
       - name: Apply Apple signing
         script: |
+          set -eu
           cd ios/App
           xcode-project use-profiles
 
       - name: Build signed iOS app
         script: |
+          set -eu
           cd ios/App
           xcode-project build-ipa --workspace App.xcworkspace --scheme App
+
+      - name: Verify sounds in the finished app
+        script: |
+          set -eu
+          python3 <<'PY'
+          import glob
+          import io
+          import plistlib
+          import wave
+          import zipfile
+          from pathlib import Path
+
+          archives = glob.glob('ios/App/build/ios/ipa/*.ipa')
+          assert len(archives) == 1, 'Expected one IPA'
+
+          with zipfile.ZipFile(archives[0]) as archive:
+              names = archive.namelist()
+              info = next(
+                  n for n in names
+                  if n.startswith('Payload/')
+                  and n.count('/') == 2
+                  and n.endswith('/Info.plist')
+              )
+              root = info.rsplit('/', 1)[0] + '/'
+              metadata = plistlib.loads(archive.read(info))
+
+              assert metadata['CFBundleIdentifier'] == 'com.donaldreckman.westminsterchimes'
+              assert int(metadata['CFBundleVersion']) > 1
+
+              sounds = list(Path('www/sounds').glob('*.wav'))
+              assert len(sounds) == 88
+
+              for sound in sounds:
+                  data = archive.read(root + sound.name)
+                  assert data == archive.read(root + 'public/sounds/' + sound.name)
+
+                  with wave.open(io.BytesIO(data)) as recording:
+                      assert recording.getnframes() / recording.getframerate() < 30
+
+              print(
+                  'Verified all 88 sounds in the iPhone app. Build:',
+                  metadata['CFBundleVersion']
+              )
+          PY
 
     artifacts:
       - ios/App/build/ios/ipa/*.ipa
