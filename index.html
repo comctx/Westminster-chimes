@@ -2,670 +2,397 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Westminster Chimes</title>
-
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:20px;
-  color:white;
-  font-family:Arial,sans-serif;
-  background:radial-gradient(circle at top,#344d68,#172238 55%,#080c14);
-}
-
-.clock{
-  width:100%;
-  max-width:540px;
-  padding:32px 24px;
-  text-align:center;
-  border:3px solid #d4af37;
-  border-radius:24px;
-  background:rgba(8,14,28,.94);
-  box-shadow:0 18px 55px rgba(0,0,0,.65);
-}
-
-h1{
-  margin:0 0 10px;
-  color:#f3cf62;
-  font:bold 38px Georgia,serif;
-}
-
-.subtitle{
-  margin-bottom:16px;
-  color:#c9d4e5;
-  font-size:17px;
-}
-
-.bell{
-  margin:8px 0;
-  font-size:70px;
-}
-
-#time{
-  margin:8px 0;
-  font-size:clamp(48px,13vw,76px);
-  font-weight:bold;
-}
-
-#date{
-  margin-bottom:20px;
-  color:#d6deea;
-  font-size:20px;
-}
-
-.settings{
-  display:grid;
-  gap:12px;
-  margin:16px 0;
-  padding:16px;
-  border:1px solid #596982;
-  border-radius:14px;
-  background:rgba(255,255,255,.05);
-}
-
-label{
-  display:block;
-  margin-bottom:7px;
-  color:#e4eaf3;
-  font-weight:bold;
-}
-
-select{
-  width:100%;
-  min-height:48px;
-  padding:10px;
-  border:2px solid #d4af37;
-  border-radius:10px;
-  color:#172238;
-  background:white;
-  font-size:17px;
-  font-weight:bold;
-}
-
-#status{
-  min-height:25px;
-  margin:18px 0;
-  color:#f3cf62;
-  font-size:17px;
-}
-
-.buttons{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-button{
-  min-height:54px;
-  padding:12px;
-  border:0;
-  border-radius:12px;
-  color:white;
-  font-size:17px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-#startButton{color:#111827;background:#f3cf62}
-#testButton{background:#276749}
-#stopButton{background:#9b2c2c}
-#muteButton{background:#35465f}
-
-.volume-box{
-  margin-top:24px;
-  padding-top:18px;
-  border-top:1px solid #4b5870;
-}
-
-input[type=range]{width:100%}
-
-.note{
-  margin-top:20px;
-  color:#aebbd0;
-  font-size:14px;
-  line-height:1.5;
-}
-
-@media(max-width:420px){
-  .buttons{grid-template-columns:1fr}
-  h1{font-size:31px}
-}
+body{margin:0;min-height:100vh;padding:40px 18px;background:radial-gradient(circle at top,#344d68,#080c14);color:white;font-family:Arial,sans-serif}
+main{max-width:540px;margin:auto;padding:28px 22px;background:#101b2d;border:3px solid #d4af37;border-radius:24px;text-align:center}
+h1{color:#f3cf62;font:bold 34px Georgia,serif}
+#time{font-size:clamp(40px,11vw,68px);font-weight:bold;margin:20px 0}
+#date,.note{color:#c9d4e5;line-height:1.5}
+label{display:block;text-align:left;font-weight:bold;margin:20px 0 8px}
+select,button{width:100%;font-size:17px;border-radius:10px;padding:14px;min-height:50px}
+select{background:white;color:#172238;border:2px solid #d4af37}
+button{border:0;margin-top:12px;background:#35465f;color:white;font-weight:bold}
+button:disabled{opacity:.5}
+#start{background:#f3cf62;color:#172238}
+#test{background:#276749}
+#stop{background:#9b2c2c}
+#status{color:#f3cf62;line-height:1.5;min-height:48px;margin-top:20px}
+input{width:100%}
+.note{font-size:14px}
 </style>
 </head>
-
 <body>
-<main class="clock">
-  <h1>Westminster Chimes</h1>
-  <div class="subtitle">Traditional clocks and tower melodies</div>
-  <div class="bell" id="clockIcon">🔔</div>
+<main>
+<h1>Westminster Chimes</h1>
+<div style="font-size:60px">🔔</div>
+<div id="time">--:--:--</div>
+<div id="date"></div>
 
-  <div id="time">--:--:--</div>
-  <div id="date">Loading date…</div>
+<label for="sound">Choose a chime</label>
+<select id="sound">
+<option value="westminster">Westminster Tower Bells</option>
+<option value="bigben">Big Ben — London</option>
+<option value="whittington">Whittington Chimes</option>
+<option value="stmichael">St. Michael Chimes</option>
+<option value="canterbury">Canterbury Chimes</option>
+<option value="cuckoo">Black Forest Cuckoo Clock</option>
+</select>
 
-  <div class="settings">
-    <div>
-      <label for="soundChoice">Choose a chime</label>
-      <select id="soundChoice">
-        <option value="westminster">Westminster Tower Bells</option>
-        <option value="bigben">Big Ben — London</option>
-        <option value="whittington">Whittington Chimes</option>
-        <option value="stmichael">St. Michael Chimes</option>
-        <option value="canterbury">Canterbury Chimes</option>
-        <option value="cuckoo">Black Forest Cuckoo Clock</option>
-      </select>
-    </div>
+<label for="schedule">Chime schedule</label>
+<select id="schedule">
+<option value="quarters">Every Quarter Hour</option>
+<option value="hourly">On the Hour Only</option>
+</select>
 
-    <div>
-      <label for="scheduleChoice">Chime schedule</label>
-      <select id="scheduleChoice">
-        <option value="quarters">Every Quarter Hour</option>
-        <option value="hourly">On the Hour Only</option>
-      </select>
-    </div>
-  </div>
+<p id="status" role="status">Press Start Chimes to begin.</p>
+<button id="start">Start Chimes</button>
+<button id="test">Test Selected Chime</button>
+<button id="lockTest">Test in 15 Seconds — Lock Phone</button>
+<button id="stop">Stop Chimes</button>
+<button id="mute">Mute</button>
 
-  <div id="status">Press Start Chimes to begin.</div>
+<label for="volume">Preview volume: <span id="volumeValue">60</span>%</label>
+<input id="volume" type="range" min="0" max="100" value="60">
 
-  <div class="buttons">
-    <button id="startButton">Start Chimes</button>
-    <button id="testButton">Test Selected Chime</button>
-    <button id="stopButton">Stop Chimes</button>
-    <button id="muteButton">Mute</button>
-  </div>
-
-  <div class="volume-box">
-    <label for="volume">
-      Volume: <span id="volumeValue">60</span>%
-    </label>
-    <input id="volume" type="range" min="0" max="100" value="60">
-  </div>
-
-  <div class="note" id="scheduleNote">
-    Select a chime and schedule, then press Start Chimes.
-  </div>
+<p class="note">
+Scheduled chimes use your iPhone’s Ringtone and Alerts volume.
+Allow notifications and sounds. Silent Mode and Focus can silence chimes.
+</p>
+<p class="note">
+Long melodies and hour strikes are played faster to fit the notification sound limit.
+Cuckoo plays on the hour and half-hour when quarter-hour mode is selected.
+</p>
 </main>
 
 <script>
 const $=id=>document.getElementById(id);
+const cap=window.Capacitor;
+const native=Boolean(cap && cap.getPlatform()==="ios");
+const notifications=native ? cap.Plugins.LocalNotifications : null;
+const storageKey="chimes-settings-v2";
 
-const timeDisplay=$("time");
-const dateDisplay=$("date");
-const statusDisplay=$("status");
-const soundChoice=$("soundChoice");
-const scheduleChoice=$("scheduleChoice");
-const startButton=$("startButton");
-const testButton=$("testButton");
-const stopButton=$("stopButton");
-const muteButton=$("muteButton");
-const volumeSlider=$("volume");
-const volumeValue=$("volumeValue");
-const clockIcon=$("clockIcon");
-const scheduleNote=$("scheduleNote");
-
-let audioContext;
-let masterGain;
 let enabled=false;
 let muted=false;
-let lastChimeKey="";
+let player=null;
+let busy=false;
+let lastMinute="";
+let saved={};
 
-const names={
-  westminster:"Westminster Tower Bells",
-  bigben:"Big Ben",
-  whittington:"Whittington Chimes",
-  stmichael:"St. Michael Chimes",
-  canterbury:"Canterbury Chimes",
-  cuckoo:"Black Forest Cuckoo Clock"
-};
+try {
+  saved=JSON.parse(localStorage.getItem(storageKey)||"{}");
+} catch(e) {}
 
-const notes={
-  westminster:{
-    1:246.94,2:329.63,3:369.99,4:415.30,strike:164.81
-  },
-  whittington:{
-    1:293.66,2:329.63,3:369.99,4:392,
-    5:440,6:493.88,7:554.37,8:587.33,strike:146.83
-  },
-  stmichael:{
-    1:349.23,2:392,3:440,4:466.16,
-    5:523.25,6:587.33,7:659.25,8:698.46,strike:174.61
-  },
-  canterbury:{
-    1:293.66,2:329.63,3:369.99,
-    4:392,5:440,6:493.88,strike:146.83
+if([...$("sound").options].some(o=>o.value===saved.sound)) {
+  $("sound").value=saved.sound;
+}
+if(["quarters","hourly"].includes(saved.schedule)) {
+  $("schedule").value=saved.schedule;
+}
+if(Number.isFinite(saved.volume)) {
+  $("volume").value=saved.volume;
+}
+muted=Boolean(saved.muted);
+
+function save() {
+  localStorage.setItem(storageKey,JSON.stringify({
+    sound:$("sound").value,
+    schedule:$("schedule").value,
+    volume:Number($("volume").value),
+    muted,
+    enabled
+  }));
+}
+
+function say(text) {
+  $("status").textContent=text;
+}
+
+function refresh() {
+  $("mute").textContent=muted?"Unmute":"Mute";
+  $("volumeValue").textContent=$("volume").value;
+}
+
+function file(part) {
+  return $("sound").value+"-"+part+".wav";
+}
+
+function name() {
+  return $("sound").selectedOptions[0].textContent;
+}
+
+function stopPreview() {
+  if(player) {
+    player.pause();
+    player=null;
   }
-};
+}
 
-const melodies={
-  westminster:{
-    15:[[4,3,2,1]],
-    30:[[2,4,3,1],[2,3,4,2]],
-    45:[[4,2,3,1],[1,3,4,2],[4,3,2,1]],
-    0:[[2,4,3,1],[2,3,4,2],[4,2,3,1],[1,3,4,2]]
-  },
+function preview(part) {
+  stopPreview();
+  player=new Audio("sounds/"+file(part));
+  player.volume=Number($("volume").value)/100;
+  return player.play();
+}
 
-  whittington:{
-    15:[[8,7,6,5,4,3,2,1]],
-    30:[
-      [8,2,7,3,6,4,5,1],
-      [8,6,4,2,7,5,3,1]
-    ],
-    45:[
-      [8,7,4,3,6,5,2,1],
-      [2,4,6,8,5,2,3,1],
-      [8,7,6,5,4,3,2,1]
-    ],
-    0:[
-      [8,2,7,3,6,4,5,1],
-      [8,6,4,2,7,5,3,1],
-      [8,7,4,3,6,5,2,1],
-      [2,4,6,8,5,2,3,1]
+async function permission() {
+  if(!notifications) {
+    throw new Error("Locked-phone chimes require the updated iPhone app.");
+  }
+
+  let result=await notifications.checkPermissions();
+
+  if(result.display!=="granted") {
+    result=await notifications.requestPermissions();
+  }
+
+  if(result.display!=="granted") {
+    throw new Error(
+      "Allow notifications in iPhone Settings for Westminster Chimes, then try again."
+    );
+  }
+}
+
+function entry(id,part,schedule) {
+  return {
+    id,
+    title:"Westminster Chimes",
+    body:name(),
+    sound:file(part),
+    schedule,
+    threadIdentifier:"chimes",
+    extra:{chimes:true},
+    silent:false
+  };
+}
+
+function plan() {
+  const list=[];
+
+  for(let hour=0;hour<24;hour++) {
+    list.push(entry(
+      1000+hour,
+      "h"+(hour%12||12),
+      {on:{hour,minute:0,second:0}}
+    ));
+  }
+
+  if($("schedule").value==="quarters") {
+    const minutes=$("sound").value==="cuckoo"
+      ?[30]
+      :[15,30,45];
+
+    for(const minute of minutes) {
+      list.push(entry(
+        1100+minute,
+        "m"+minute,
+        {on:{minute,second:0}}
+      ));
+    }
+  }
+
+  return list;
+}
+
+async function cancel() {
+  if(!notifications)return;
+
+  await notifications.cancel({
+    notifications:[
+      ...Array.from({length:24},(_,h)=>({id:1000+h})),
+      {id:1115},
+      {id:1130},
+      {id:1145},
+      {id:1900}
     ]
-  },
+  });
+}
 
-  stmichael:{
-    15:[[8,7,6,5,4,3,2,1]],
-    30:[
-      [8,2,3,4,7,5,6,1],
-      [5,4,3,6,2,7,8,1]
-    ],
-    45:[
-      [7,8,3,4,2,5,6,1],
-      [5,7,3,8,4,2,6,1],
-      [8,7,6,5,4,3,2,1]
-    ],
-    0:[
-      [8,2,3,4,7,5,6,1],
-      [5,4,3,6,2,7,8,1],
-      [7,8,3,4,2,5,6,1],
-      [5,7,3,8,4,2,6,1]
-    ]
-  },
+async function installSchedule() {
+  await permission();
+  await cancel();
+  enabled=false;
 
-  canterbury:{
-    15:[[6,4,2,5,3,1]],
-    30:[
-      [2,4,6,3,1,5],
-      [4,6,2,5,1,3]
-    ],
-    45:[
-      [1,6,4,2,3,5],
-      [4,6,2,5,1,3],
-      [6,4,2,3,5,1]
-    ],
-    0:[
-      [3,1,6,4,2,5],
-      [4,6,2,5,1,3],
-      [3,1,6,4,2,5],
-      [4,6,5,3,2,1]
-    ]
+  try {
+    await notifications.schedule({notifications:plan()});
+    enabled=true;
+  } catch(error) {
+    await cancel();
+    throw error;
   }
-};
-
-function getStyle(){
-  return soundChoice.value;
 }
 
-function getMusicStyle(){
-  return getStyle()==="bigben"?"westminster":getStyle();
-}
+async function run(action) {
+  if(busy)return;
+  busy=true;
 
-function getName(){
-  return names[getStyle()];
-}
+  document.querySelectorAll("button,select").forEach(el=>{
+    el.disabled=true;
+  });
 
-function getVolume(){
-  return muted?0:Number(volumeSlider.value)/100;
-}
-
-function prepareAudio(){
-  if(!audioContext){
-    const AudioContext=window.AudioContext||window.webkitAudioContext;
-    audioContext=new AudioContext();
-    masterGain=audioContext.createGain();
-    masterGain.connect(audioContext.destination);
-  }
-
-  if(audioContext.state==="suspended"){
-    audioContext.resume();
-  }
-
-  masterGain.gain.setValueAtTime(getVolume(),audioContext.currentTime);
-}
-
-function makeSequence(minutes){
-  const style=getMusicStyle();
-  const groups=melodies[style][minutes];
-  const sequence=[];
-  const spacing=style==="westminster"?.82:.56;
-  const gap=style==="westminster"?3.65:5.05;
-
-  groups.forEach((group,g)=>{
-    group.forEach((note,n)=>{
-      sequence.push([note,g*gap+n*spacing]);
+  try {
+    await action();
+    save();
+  } catch(error) {
+    say(error.message||"The action failed. Please try again.");
+  } finally {
+    busy=false;
+    refresh();
+    document.querySelectorAll("button,select").forEach(el=>{
+      el.disabled=false;
     });
-  });
-
-  return {sequence,noteSet:notes[style]};
-}
-
-function playBell(frequency,delay,hourBell=false){
-  if(!audioContext||muted)return;
-
-  const big=getStyle()==="bigben";
-  const pitch=big?(hourBell?.79:.88):1;
-  const duration=big?(hourBell?8.2:6.2):(hourBell?6.8:4.8);
-  const start=audioContext.currentTime+delay;
-
-  const harmonics=[
-    [.5,.29,1],
-    [1,.49,1],
-    [1.49,.19,.78],
-    [2,.14,.61],
-    [2.72,.09,.46],
-    [3.68,.05,.33]
-  ];
-
-  harmonics.forEach(([ratio,amount,fade])=>{
-    const oscillator=audioContext.createOscillator();
-    const gain=audioContext.createGain();
-
-    oscillator.type="sine";
-    oscillator.frequency.setValueAtTime(
-      frequency*pitch*ratio,start
-    );
-
-    gain.gain.setValueAtTime(.0001,start);
-    gain.gain.exponentialRampToValueAtTime(amount,start+.03);
-    gain.gain.exponentialRampToValueAtTime(
-      .0001,start+duration*fade
-    );
-
-    oscillator.connect(gain);
-    gain.connect(masterGain);
-
-    oscillator.start(start);
-    oscillator.stop(start+duration+.2);
-  });
-}
-
-function playSequence(minutes){
-  prepareAudio();
-  const music=makeSequence(minutes);
-
-  music.sequence.forEach(([note,delay])=>{
-    playBell(music.noteSet[note],delay);
-  });
-}
-
-function sequenceLength(minutes){
-  const sequence=makeSequence(minutes).sequence;
-  return sequence[sequence.length-1][1]+2.4;
-}
-
-function strikeHour(hour,delay){
-  const style=getMusicStyle();
-  const strikeNote=notes[style].strike;
-  let strikes=hour%12||12;
-  const spacing=getStyle()==="bigben"?3.8:3.15;
-
-  for(let i=0;i<strikes;i++){
-    playBell(strikeNote,delay+i*spacing,true);
   }
 }
 
-function createBreathNoise(start,duration){
-  const length=Math.floor(audioContext.sampleRate*duration);
-  const buffer=audioContext.createBuffer(
-    1,length,audioContext.sampleRate
+$("start").onclick=()=>run(async()=>{
+  stopPreview();
+
+  if(native) {
+    await installSchedule();
+  } else {
+    enabled=true;
+  }
+
+  muted=false;
+  say(native
+    ?"Chimes scheduled. You can lock your phone."
+    :"Chimes on while this browser page stays open."
   );
+});
 
-  const data=buffer.getChannelData(0);
+$("stop").onclick=()=>run(async()=>{
+  stopPreview();
+  await cancel();
+  enabled=false;
+  muted=false;
+  say("Automatic chimes are stopped.");
+});
 
-  for(let i=0;i<length;i++){
-    data[i]=Math.random()*2-1;
+$("mute").onclick=()=>run(async()=>{
+  stopPreview();
+
+  if(!muted) {
+    await cancel();
+    muted=true;
+    say("Chimes are muted.");
+  } else {
+    if(enabled&&native)await installSchedule();
+    muted=false;
+    say(enabled
+      ?"Chimes are on."
+      :"Unmuted. Press Start Chimes to begin."
+    );
+  }
+});
+
+$("test").onclick=()=>run(async()=>{
+  await preview("h1");
+  say("Playing "+name()+" preview.");
+});
+
+$("lockTest").onclick=()=>run(async()=>{
+  stopPreview();
+  await permission();
+
+  await notifications.schedule({
+    notifications:[
+      entry(1900,"h1",{
+        at:new Date(Date.now()+15000)
+      })
+    ]
+  });
+
+  say("Lock your phone now. One test chime is scheduled in 15 seconds.");
+});
+
+async function change() {
+  stopPreview();
+
+  if(enabled&&!muted&&native) {
+    await installSchedule();
   }
 
-  const noise=audioContext.createBufferSource();
-  const filter=audioContext.createBiquadFilter();
-  const gain=audioContext.createGain();
-
-  noise.buffer=buffer;
-  filter.type="bandpass";
-  filter.frequency.value=850;
-  filter.Q.value=1.3;
-
-  gain.gain.setValueAtTime(.0001,start);
-  gain.gain.linearRampToValueAtTime(.055,start+.04);
-  gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
-
-  noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(masterGain);
-
-  noise.start(start);
-  noise.stop(start+duration);
-}
-
-function playWoodenWhistle(frequency,start,duration){
-  const tone=audioContext.createOscillator();
-  const overtone=audioContext.createOscillator();
-  const overtoneGain=audioContext.createGain();
-  const filter=audioContext.createBiquadFilter();
-  const gain=audioContext.createGain();
-
-  tone.type="triangle";
-  overtone.type="sine";
-
-  tone.frequency.setValueAtTime(frequency*.975,start);
-  tone.frequency.exponentialRampToValueAtTime(
-    frequency,start+.08
+  say(muted
+    ?"Chimes remain muted."
+    :enabled
+      ?"Chime settings updated."
+      :"Selection saved. Press Start Chimes."
   );
-
-  overtone.frequency.value=frequency*2;
-  overtoneGain.gain.value=.12;
-
-  filter.type="lowpass";
-  filter.frequency.value=1450;
-  filter.Q.value=2.5;
-
-  gain.gain.setValueAtTime(.0001,start);
-  gain.gain.linearRampToValueAtTime(.58,start+.055);
-  gain.gain.setValueAtTime(.55,start+duration*.62);
-  gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
-
-  tone.connect(filter);
-  overtone.connect(overtoneGain);
-  overtoneGain.connect(filter);
-  filter.connect(gain);
-  gain.connect(masterGain);
-
-  tone.start(start);
-  overtone.start(start);
-  tone.stop(start+duration+.05);
-  overtone.stop(start+duration+.05);
-
-  createBreathNoise(start,duration);
 }
 
-function playOneCuckoo(delay){
-  prepareAudio();
-  const start=audioContext.currentTime+delay;
+$("sound").onchange=()=>run(change);
+$("schedule").onchange=()=>run(change);
 
-  playWoodenWhistle(659.25,start,.34);
-  playWoodenWhistle(523.25,start+.39,.62);
-}
+$("volume").oninput=()=>{
+  if(player)player.volume=Number($("volume").value)/100;
+  refresh();
+  save();
+};
 
-function playCuckooCalls(count){
-  for(let i=0;i<count;i++){
-    playOneCuckoo(i*1.45);
-  }
-}
-
-function playAutomatic(minutes,hour){
-  if(!enabled||muted)return;
-
-  statusDisplay.textContent="Playing "+getName()+".";
-
-  if(getStyle()==="cuckoo"){
-    if(minutes===30&&scheduleChoice.value==="quarters"){
-      playCuckooCalls(1);
-    }
-
-    if(minutes===0){
-      playCuckooCalls(hour%12||12);
-    }
-
-    return;
-  }
-
-  playSequence(minutes);
-
-  if(minutes===0){
-    strikeHour(hour,sequenceLength(0));
-  }
-}
-
-function checkChime(now){
-  if(!enabled)return;
-
-  const minutes=now.getMinutes();
-  const seconds=now.getSeconds();
-
-  let validMinutes;
-
-  if(scheduleChoice.value==="hourly"){
-    validMinutes=[0];
-  }else if(getStyle()==="cuckoo"){
-    validMinutes=[0,30];
-  }else{
-    validMinutes=[0,15,30,45];
-  }
-
-  if(!validMinutes.includes(minutes)||seconds>1)return;
-
-  const key=
-    now.getFullYear()+"-"+
-    now.getMonth()+"-"+
-    now.getDate()+"-"+
-    now.getHours()+"-"+
-    minutes;
-
-  if(key===lastChimeKey)return;
-
-  lastChimeKey=key;
-  playAutomatic(minutes,now.getHours());
-}
-
-function updateClock(){
+function tick() {
   const now=new Date();
 
-  timeDisplay.textContent=now.toLocaleTimeString([],{
+  $("time").textContent=now.toLocaleTimeString([],{
     hour:"numeric",
     minute:"2-digit",
     second:"2-digit"
   });
 
-  dateDisplay.textContent=now.toLocaleDateString([],{
+  $("date").textContent=now.toLocaleDateString([],{
     weekday:"long",
     month:"long",
     day:"numeric",
     year:"numeric"
   });
 
-  checkChime(now);
+  if(native||!enabled||muted)return;
+
+  const minute=now.getMinutes();
+  const valid=$("schedule").value==="hourly"
+    ?[0]
+    :$("sound").value==="cuckoo"
+      ?[0,30]
+      :[0,15,30,45];
+
+  const key=Math.floor(now.getTime()/60000);
+
+  if(valid.includes(minute)&&now.getSeconds()<2&&key!==lastMinute) {
+    lastMinute=key;
+
+    preview(
+      minute===0
+        ?"h"+(now.getHours()%12||12)
+        :"m"+minute
+    ).catch(()=>{
+      say("Tap Test Selected Chime to enable browser audio.");
+    });
+  }
 }
 
-function updateDescription(){
-  const cuckoo=getStyle()==="cuckoo";
-  const hourly=scheduleChoice.value==="hourly";
+refresh();
+tick();
+setInterval(tick,500);
 
-  clockIcon.textContent=cuckoo?"🐦":"🔔";
+if(native)run(async()=>{
+  const pending=await notifications.getPending();
 
-  if(hourly){
-    scheduleNote.textContent=cuckoo
-      ?"The cuckoo counts the hour at the top of each hour."
-      :"The full selected melody and hour strikes play only on the hour.";
-  }else{
-    scheduleNote.textContent=cuckoo
-      ?"Cuckoo once at the half-hour and counts the hour on the hour."
-      :"The selected melody plays every quarter hour.";
-  }
-
-  statusDisplay.textContent=
-    getName()+" selected. Press Start Chimes.";
-}
-
-startButton.addEventListener("click",()=>{
-  prepareAudio();
-  enabled=true;
-  muted=false;
-  muteButton.textContent="Mute";
-  statusDisplay.textContent=getName()+" is on.";
-});
-
-testButton.addEventListener("click",()=>{
-  prepareAudio();
-  muted=false;
-  muteButton.textContent="Mute";
-  statusDisplay.textContent="Playing "+getName()+".";
-
-  if(getStyle()==="cuckoo"){
-    playCuckooCalls(2);
-    return;
-  }
-
-  playSequence(0);
-  const style=getMusicStyle();
-
-  playBell(
-    notes[style].strike,
-    sequenceLength(0),
-    true
-  );
-});
-
-stopButton.addEventListener("click",()=>{
-  enabled=false;
-  statusDisplay.textContent="Automatic chimes are stopped.";
-});
-
-muteButton.addEventListener("click",()=>{
-  prepareAudio();
-  muted=!muted;
-  muteButton.textContent=muted?"Unmute":"Mute";
-
-  masterGain.gain.setValueAtTime(
-    getVolume(),
-    audioContext.currentTime
+  const scheduled=pending.notifications.some(n=>
+    n.id>=1000&&n.id<=1023
   );
 
-  statusDisplay.textContent=muted
-    ?"Sound is muted."
-    :"Sound is unmuted.";
-});
+  enabled=scheduled||(muted&&Boolean(saved.enabled));
 
-soundChoice.addEventListener("change",updateDescription);
-scheduleChoice.addEventListener("change",updateDescription);
-
-volumeSlider.addEventListener("input",()=>{
-  volumeValue.textContent=volumeSlider.value;
-
-  if(masterGain&&audioContext){
-    masterGain.gain.setValueAtTime(
-      getVolume(),
-      audioContext.currentTime
-    );
+  if(scheduled) {
+    muted=false;
+    say("Chimes are scheduled, including while locked.");
+  } else if(muted) {
+    say("Chimes are muted.");
+  } else {
+    say("Press Start Chimes to begin.");
   }
 });
-
-updateClock();
-setInterval(updateClock,500);
 </script>
 </body>
 </html>
