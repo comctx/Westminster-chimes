@@ -7,7 +7,9 @@ workflows:
     integrations:
       app_store_connect: Codemagic
 
-    environment:
+    environment:     
+      groups:
+        - appstore_credentials
       node: latest
       xcode: latest
       cocoapods: default
