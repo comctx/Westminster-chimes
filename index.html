@@ -150,6 +150,7 @@ input[type=range]{width:100%}
 <main class="clock">
   <h1>Clock Tower Chimes</h1>
   <div class="subtitle">Traditional clocks and tower melodies</div>
+  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v2</div>
   <div class="bell" id="clockIcon">🔔</div>
 
   <div id="time">--:--:--</div>
@@ -191,6 +192,7 @@ input[type=range]{width:100%}
           <select id="quietEnd"></select>
         </div>
       </div>
+      <div id="quietStatus" style="margin-top:10px;font-weight:700;"></div>
     </div>
   </div>
 
@@ -234,13 +236,13 @@ const scheduleNote=$("scheduleNote");
 const quietEnabled=$("quietEnabled");
 const quietStart=$("quietStart");
 const quietEnd=$("quietEnd");
+const quietStatus=$("quietStatus");
 
 let audioContext;
 let masterGain;
 let enabled=false;
 let muted=false;
 let lastChimeKey="";
-let lastQuietState=null;
 
 const names={
   westminster:"Westminster Tower Bells",
@@ -347,8 +349,13 @@ function getName(){
   return names[getStyle()];
 }
 
-function getVolume(){
+function getNormalVolume(){
   return muted?0:Number(volumeSlider.value)/100;
+}
+
+function getVolume(){
+  // Absolute fail-safe: Quiet Hours always means zero output.
+  return isQuietTime(new Date()) ? 0 : getNormalVolume();
 }
 
 function prepareAudio(){
@@ -383,7 +390,7 @@ function makeSequence(minutes){
 }
 
 function playBell(frequency,delay,hourBell=false){
-  if(!audioContext||muted)return;
+  if(!audioContext||muted||isQuietTime(new Date()))return;
 
   const big=getStyle()==="bigben";
   const pitch=big?(hourBell?.79:.88):1;
@@ -522,6 +529,7 @@ function playWoodenWhistle(frequency,start,duration){
 }
 
 function playOneCuckoo(delay){
+  if(isQuietTime(new Date()))return;
   prepareAudio();
   const start=audioContext.currentTime+delay;
 
@@ -538,9 +546,8 @@ function playCuckooCalls(count){
 function playAutomatic(minutes,hour){
   if(!enabled||muted)return;
 
-  // Fail-safe: never allow automatic audio during Quiet Hours.
   if(isQuietTime(new Date())){
-    applyQuietHours(new Date());
+    applyQuietState(new Date());
     return;
   }
 
@@ -597,32 +604,38 @@ function isQuietTime(now){
   const end=Number(quietEnd.value);
   const hour=now.getHours();
 
+  // Same start/end means quiet all day.
   if(start===end)return true;
-  if(start<end)return hour>=start&&hour<end;
-  return hour>=start||hour<end;
+
+  // Daytime range, such as 8 AM to 5 PM.
+  if(start<end)return hour>=start && hour<end;
+
+  // Overnight range, such as 10 PM to 8 AM.
+  return hour>=start || hour<end;
 }
 
-function applyQuietHours(now){
+function applyQuietState(now){
   const quiet=isQuietTime(now);
 
-  // Hard mute the master output during Quiet Hours.
-  // This protects against any other audio path or already-scheduled sound.
+  // Force master output to zero while quiet, including sounds
+  // that may already have been scheduled.
   if(masterGain&&audioContext){
     masterGain.gain.cancelScheduledValues(audioContext.currentTime);
     masterGain.gain.setValueAtTime(
-      quiet ? 0 : getVolume(),
+      quiet ? 0 : getNormalVolume(),
       audioContext.currentTime
     );
   }
 
-  if(quiet!==lastQuietState){
-    lastQuietState=quiet;
-
-    if(enabled){
-      statusDisplay.textContent=quiet
-        ?"Quiet Hours active — chimes paused until "+hourLabel(Number(quietEnd.value))+"."
-        :getName()+" is on.";
-    }
+  if(!quietEnabled.checked){
+    quietStatus.textContent="Quiet Hours are OFF.";
+  }else if(quiet){
+    quietStatus.textContent=
+      "QUIET NOW — no chimes until "+hourLabel(Number(quietEnd.value))+".";
+  }else{
+    quietStatus.textContent=
+      "Quiet Hours set for "+hourLabel(Number(quietStart.value))+
+      " to "+hourLabel(Number(quietEnd.value))+".";
   }
 
   return quiet;
@@ -632,13 +645,14 @@ function saveQuietSettings(){
   localStorage.setItem("quietEnabled",String(quietEnabled.checked));
   localStorage.setItem("quietStart",quietStart.value);
   localStorage.setItem("quietEnd",quietEnd.value);
+
+  applyQuietState(new Date());
   updateDescription();
-  lastQuietState=null;
-  applyQuietHours(new Date());
 }
 
 function checkChime(now){
-  const quiet=applyQuietHours(now);
+  const quiet=applyQuietState(now);
+
   if(!enabled)return;
   if(quiet)return;
 
@@ -716,24 +730,23 @@ function updateDescription(){
 }
 
 startButton.addEventListener("click",()=>{
-  prepareAudio();
   enabled=true;
   muted=false;
   muteButton.textContent="Mute";
-  lastQuietState=null;
-  applyQuietHours(new Date());
+  prepareAudio();
 
-  if(!isQuietTime(new Date())){
+  if(applyQuietState(new Date())){
+    statusDisplay.textContent="Chimes are ON, but Quiet Hours are active.";
+  }else{
     statusDisplay.textContent=getName()+" is on.";
   }
 });
 
 testButton.addEventListener("click",()=>{
-  // Manual test is also blocked while Quiet Hours are active.
   if(isQuietTime(new Date())){
-    applyQuietHours(new Date());
+    applyQuietState(new Date());
     statusDisplay.textContent=
-      "Quiet Hours active — test sound is paused until "+
+      "Quiet Hours are active — test sound blocked until "+
       hourLabel(Number(quietEnd.value))+".";
     return;
   }
@@ -768,14 +781,13 @@ muteButton.addEventListener("click",()=>{
   muted=!muted;
   muteButton.textContent=muted?"Unmute":"Mute";
 
-  masterGain.gain.setValueAtTime(
-    getVolume(),
-    audioContext.currentTime
-  );
+  applyQuietState(new Date());
 
   statusDisplay.textContent=muted
     ?"Sound is muted."
-    :"Sound is unmuted.";
+    :(isQuietTime(new Date())
+      ?"Sound remains off because Quiet Hours are active."
+      :"Sound is unmuted.");
 });
 
 soundChoice.addEventListener("change",updateDescription);
@@ -788,16 +800,27 @@ volumeSlider.addEventListener("input",()=>{
   volumeValue.textContent=volumeSlider.value;
 
   if(masterGain&&audioContext){
-    masterGain.gain.setValueAtTime(
-      getVolume(),
-      audioContext.currentTime
-    );
+    applyQuietState(new Date());
   }
 });
 
 fillQuietTimes();
 updateDescription();
+applyQuietState(new Date());
 updateClock();
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    applyQuietState(new Date());
+    updateClock();
+  }
+});
+
+window.addEventListener("focus",()=>{
+  applyQuietState(new Date());
+  updateClock();
+});
+
 setInterval(updateClock,500);
 </script>
 </body>
