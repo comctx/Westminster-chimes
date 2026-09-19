@@ -240,6 +240,7 @@ let masterGain;
 let enabled=false;
 let muted=false;
 let lastChimeKey="";
+let lastQuietState=null;
 
 const names={
   westminster:"Westminster Tower Bells",
@@ -537,6 +538,12 @@ function playCuckooCalls(count){
 function playAutomatic(minutes,hour){
   if(!enabled||muted)return;
 
+  // Fail-safe: never allow automatic audio during Quiet Hours.
+  if(isQuietTime(new Date())){
+    applyQuietHours(new Date());
+    return;
+  }
+
   statusDisplay.textContent="Playing "+getName()+".";
 
   if(getStyle()==="cuckoo"){
@@ -595,16 +602,45 @@ function isQuietTime(now){
   return hour>=start||hour<end;
 }
 
+function applyQuietHours(now){
+  const quiet=isQuietTime(now);
+
+  // Hard mute the master output during Quiet Hours.
+  // This protects against any other audio path or already-scheduled sound.
+  if(masterGain&&audioContext){
+    masterGain.gain.cancelScheduledValues(audioContext.currentTime);
+    masterGain.gain.setValueAtTime(
+      quiet ? 0 : getVolume(),
+      audioContext.currentTime
+    );
+  }
+
+  if(quiet!==lastQuietState){
+    lastQuietState=quiet;
+
+    if(enabled){
+      statusDisplay.textContent=quiet
+        ?"Quiet Hours active — chimes paused until "+hourLabel(Number(quietEnd.value))+"."
+        :getName()+" is on.";
+    }
+  }
+
+  return quiet;
+}
+
 function saveQuietSettings(){
   localStorage.setItem("quietEnabled",String(quietEnabled.checked));
   localStorage.setItem("quietStart",quietStart.value);
   localStorage.setItem("quietEnd",quietEnd.value);
   updateDescription();
+  lastQuietState=null;
+  applyQuietHours(new Date());
 }
 
 function checkChime(now){
+  const quiet=applyQuietHours(now);
   if(!enabled)return;
-  if(isQuietTime(now))return;
+  if(quiet)return;
 
   const minutes=now.getMinutes();
   const seconds=now.getSeconds();
@@ -684,10 +720,24 @@ startButton.addEventListener("click",()=>{
   enabled=true;
   muted=false;
   muteButton.textContent="Mute";
-  statusDisplay.textContent=getName()+" is on.";
+  lastQuietState=null;
+  applyQuietHours(new Date());
+
+  if(!isQuietTime(new Date())){
+    statusDisplay.textContent=getName()+" is on.";
+  }
 });
 
 testButton.addEventListener("click",()=>{
+  // Manual test is also blocked while Quiet Hours are active.
+  if(isQuietTime(new Date())){
+    applyQuietHours(new Date());
+    statusDisplay.textContent=
+      "Quiet Hours active — test sound is paused until "+
+      hourLabel(Number(quietEnd.value))+".";
+    return;
+  }
+
   prepareAudio();
   muted=false;
   muteButton.textContent="Mute";
