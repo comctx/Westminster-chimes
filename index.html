@@ -150,7 +150,7 @@ input[type=range]{width:100%}
 <main class="clock">
   <h1>Clock Tower Chimes</h1>
   <div class="subtitle">Traditional clocks and tower melodies</div>
-  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v2</div>
+  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v3</div>
   <div class="bell" id="clockIcon">🔔</div>
 
   <div id="time">--:--:--</div>
@@ -359,7 +359,10 @@ function getVolume(){
 }
 
 function prepareAudio(){
-  if(!audioContext){
+  // Never start or restart audio while Quiet Hours are active.
+  if(isQuietTime(new Date()))return false;
+
+  if(!audioContext || audioContext.state==="closed"){
     const AudioContext=window.AudioContext||window.webkitAudioContext;
     audioContext=new AudioContext();
     masterGain=audioContext.createGain();
@@ -370,7 +373,8 @@ function prepareAudio(){
     audioContext.resume();
   }
 
-  masterGain.gain.setValueAtTime(getVolume(),audioContext.currentTime);
+  masterGain.gain.setValueAtTime(getNormalVolume(),audioContext.currentTime);
+  return true;
 }
 
 function makeSequence(minutes){
@@ -390,7 +394,8 @@ function makeSequence(minutes){
 }
 
 function playBell(frequency,delay,hourBell=false){
-  if(!audioContext||muted||isQuietTime(new Date()))return;
+  if(!audioContext || audioContext.state==="closed" ||
+     muted || isQuietTime(new Date()))return;
 
   const big=getStyle()==="bigben";
   const pitch=big?(hourBell?.79:.88):1;
@@ -430,7 +435,9 @@ function playBell(frequency,delay,hourBell=false){
 }
 
 function playSequence(minutes){
-  prepareAudio();
+  if(isQuietTime(new Date()))return;
+  if(!audioContext || audioContext.state==="closed")return;
+
   const music=makeSequence(minutes);
 
   music.sequence.forEach(([note,delay])=>{
@@ -530,7 +537,9 @@ function playWoodenWhistle(frequency,start,duration){
 
 function playOneCuckoo(delay){
   if(isQuietTime(new Date()))return;
-  prepareAudio();
+  if(!prepareAudio())return;
+  if(!audioContext || audioContext.state==="closed")return;
+
   const start=audioContext.currentTime+delay;
 
   playWoodenWhistle(659.25,start,.34);
@@ -546,10 +555,11 @@ function playCuckooCalls(count){
 function playAutomatic(minutes,hour){
   if(!enabled||muted)return;
 
-  if(isQuietTime(new Date())){
-    applyQuietState(new Date());
+  if(applyQuietState(new Date())){
     return;
   }
+
+  if(!prepareAudio())return;
 
   statusDisplay.textContent="Playing "+getName()+".";
 
@@ -617,25 +627,39 @@ function isQuietTime(now){
 function applyQuietState(now){
   const quiet=isQuietTime(now);
 
-  // Force master output to zero while quiet, including sounds
-  // that may already have been scheduled.
-  if(masterGain&&audioContext){
-    masterGain.gain.cancelScheduledValues(audioContext.currentTime);
-    masterGain.gain.setValueAtTime(
-      quiet ? 0 : getNormalVolume(),
-      audioContext.currentTime
-    );
-  }
+  if(quiet){
+    // HARD SILENCE:
+    // Closing the AudioContext immediately stops every current and
+    // already-scheduled bell/cuckoo sound from this page.
+    if(audioContext && audioContext.state!=="closed"){
+      try{
+        audioContext.close();
+      }catch(e){}
+    }
 
-  if(!quietEnabled.checked){
-    quietStatus.textContent="Quiet Hours are OFF.";
-  }else if(quiet){
+    audioContext=null;
+    masterGain=null;
+
+    // The manual test button cannot make sound during Quiet Hours.
+    testButton.disabled=true;
+    testButton.style.opacity=".45";
+    testButton.style.cursor="not-allowed";
+
     quietStatus.textContent=
-      "QUIET NOW — no chimes until "+hourLabel(Number(quietEnd.value))+".";
+      "QUIET NOW — audio engine OFF until "+
+      hourLabel(Number(quietEnd.value))+".";
   }else{
-    quietStatus.textContent=
-      "Quiet Hours set for "+hourLabel(Number(quietStart.value))+
-      " to "+hourLabel(Number(quietEnd.value))+".";
+    testButton.disabled=false;
+    testButton.style.opacity="";
+    testButton.style.cursor="";
+
+    if(!quietEnabled.checked){
+      quietStatus.textContent="Quiet Hours are OFF.";
+    }else{
+      quietStatus.textContent=
+        "Quiet Hours set for "+hourLabel(Number(quietStart.value))+
+        " to "+hourLabel(Number(quietEnd.value))+".";
+    }
   }
 
   return quiet;
@@ -733,27 +757,29 @@ startButton.addEventListener("click",()=>{
   enabled=true;
   muted=false;
   muteButton.textContent="Mute";
-  prepareAudio();
 
   if(applyQuietState(new Date())){
-    statusDisplay.textContent="Chimes are ON, but Quiet Hours are active.";
-  }else{
-    statusDisplay.textContent=getName()+" is on.";
-  }
-});
-
-testButton.addEventListener("click",()=>{
-  if(isQuietTime(new Date())){
-    applyQuietState(new Date());
     statusDisplay.textContent=
-      "Quiet Hours are active — test sound blocked until "+
-      hourLabel(Number(quietEnd.value))+".";
+      "Chimes are ON, but Quiet Hours have shut the audio engine off.";
     return;
   }
 
   prepareAudio();
+  statusDisplay.textContent=getName()+" is on.";
+});
+
+testButton.addEventListener("click",()=>{
+  if(applyQuietState(new Date())){
+    statusDisplay.textContent=
+      "BLOCKED — Quiet Hours are active. No test sound can play.";
+    return;
+  }
+
   muted=false;
   muteButton.textContent="Mute";
+
+  if(!prepareAudio())return;
+
   statusDisplay.textContent="Playing "+getName()+".";
 
   if(getStyle()==="cuckoo"){
@@ -777,17 +803,25 @@ stopButton.addEventListener("click",()=>{
 });
 
 muteButton.addEventListener("click",()=>{
-  prepareAudio();
+  if(applyQuietState(new Date())){
+    statusDisplay.textContent=
+      "Quiet Hours are active — the audio engine is already off.";
+    return;
+  }
+
+  if(!prepareAudio())return;
+
   muted=!muted;
   muteButton.textContent=muted?"Unmute":"Mute";
 
-  applyQuietState(new Date());
+  masterGain.gain.setValueAtTime(
+    getNormalVolume(),
+    audioContext.currentTime
+  );
 
   statusDisplay.textContent=muted
     ?"Sound is muted."
-    :(isQuietTime(new Date())
-      ?"Sound remains off because Quiet Hours are active."
-      :"Sound is unmuted.");
+    :"Sound is unmuted.";
 });
 
 soundChoice.addEventListener("change",updateDescription);
@@ -799,8 +833,13 @@ quietEnd.addEventListener("change",saveQuietSettings);
 volumeSlider.addEventListener("input",()=>{
   volumeValue.textContent=volumeSlider.value;
 
-  if(masterGain&&audioContext){
+  if(isQuietTime(new Date())){
     applyQuietState(new Date());
+  }else if(masterGain&&audioContext&&audioContext.state!=="closed"){
+    masterGain.gain.setValueAtTime(
+      getNormalVolume(),
+      audioContext.currentTime
+    );
   }
 });
 
