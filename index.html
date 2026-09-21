@@ -215,9 +215,10 @@ input[type=range]{width:100%}
   <div class="note" id="scheduleNote">
     Select a chime and schedule, then press Start Chimes.
   </div>
-<div style="text-align:center; padding:18px 10px 4px; font-size:13px; opacity:.65;">
-  A&nbsp;DONCO-BAYCITY™ App
-</div>
+
+  <div style="text-align:center; padding:18px 10px 4px; font-size:13px; opacity:.65;">
+    A&nbsp;DONCO-BAYCITY™ App
+  </div>
 </main>
 
 <script>
@@ -290,9 +291,6 @@ function lockedSoundName(hour,minute){
   }
 
   return `${style}-m${Number(minute)}.wav`;
-}
-
-
 }
 
 async function cancelAllLockedChimes(){
@@ -371,7 +369,6 @@ async function syncLockedPhoneChimes(){
     }
 
     const notifications=[];
-    
 
     // iOS keeps at most 64 pending local notifications per app.
     // When the daily repeating plan fits, use repeating clock times.
@@ -383,7 +380,6 @@ async function syncLockedPhoneChimes(){
           title:"Westminster Chimes",
           body:"Clock chime",
           sound,
-          
           schedule:{
             on:{hour:t.hour,minute:t.minute,second:0}
           },
@@ -401,7 +397,6 @@ async function syncLockedPhoneChimes(){
           title:"Westminster Chimes",
           body:"Clock chime",
           sound,
-          
           schedule:{at},
           extra:{kind:"westminster-chime"}
         });
@@ -1066,6 +1061,5 @@ window.addEventListener("focus",async ()=>{
 
 setInterval(updateClock,500);
 </script>
-
 </body>
 </html>
