@@ -8,8 +8,9 @@ workflows:
       app_store_connect: Codemagic
 
     environment:
-      groups:
-        - appstore_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.donaldreckman.westminsterchimes
       node: latest
       xcode: latest
       cocoapods: default
@@ -65,18 +66,8 @@ workflows:
           RUBY
           CHIMES_BUILD_NUMBER=$(( ${PROJECT_BUILD_NUMBER:?Missing project build number} + 2 ))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
-          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
           echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
-
-      - name: Get Apple signing files
-        script: |
-          set -eu
-          keychain initialize
-          umask 077
-          printf '%s' "$CERTIFICATE_PRIVATE_KEY" > /tmp/ios_distribution_private_key
-          trap 'rm -f /tmp/ios_distribution_private_key' EXIT
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --certificate-key @file:/tmp/ios_distribution_private_key
-          keychain add-certificates
 
       - name: Apply Apple signing
         script: |
