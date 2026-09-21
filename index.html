@@ -242,7 +242,178 @@ let audioContext;
 let masterGain;
 let enabled=false;
 let muted=false;
+
 let lastChimeKey="";
+
+// Native iPhone locked-screen scheduling.
+// This is intentionally separate from the Web Audio clock.
+// When available, Capacitor Local Notifications is rebuilt whenever
+// Start, Stop, sound, schedule, or Quiet Hours settings change.
+function getLocalNotifications(){
+  try{
+    return window.Capacitor &&
+           window.Capacitor.Plugins &&
+           window.Capacitor.Plugins.LocalNotifications
+      ? window.Capacitor.Plugins.LocalNotifications
+      : null;
+  }catch(e){
+    return null;
+  }
+}
+
+function quietAtHour(hour){
+  if(!quietEnabled.checked)return false;
+
+  const start=Number(quietStart.value);
+  const end=Number(quietEnd.value);
+
+  if(start===end)return true;
+  if(start<end)return hour>=start && hour<end;
+  return hour>=start || hour<end;
+}
+
+function lockedMinutes(){
+  if(scheduleChoice.value==="hourly")return [0];
+  if(getStyle()==="cuckoo")return [0,30];
+  return [0,15,30,45];
+}
+
+function lockedSoundName(){
+  // If matching custom notification sounds are bundled, iOS will use them.
+  // If a file is unavailable, iOS falls back to the default notification sound.
+  const map={
+    westminster:"westminster.wav",
+    bigben:"bigben.wav",
+    whittington:"whittington.wav",
+    stmichael:"stmichael.wav",
+    canterbury:"canterbury.wav",
+    cuckoo:"cuckoo.wav"
+  };
+  return map[getStyle()] || "westminster.wav";
+}
+
+async function cancelAllLockedChimes(){
+  const LN=getLocalNotifications();
+  if(!LN)return false;
+
+  try{
+    const pending=await LN.getPending();
+    const list=(pending&&pending.notifications)||[];
+
+    if(list.length){
+      await LN.cancel({
+        notifications:list.map(n=>({id:n.id}))
+      });
+    }
+    return true;
+  }catch(e){
+    console.warn("Could not cancel locked-phone chimes",e);
+    return false;
+  }
+}
+
+function nextAllowedTimes(maxCount){
+  const result=[];
+  const mins=lockedMinutes();
+
+  // Start at the next whole minute.
+  let cursor=new Date();
+  cursor.setSeconds(0,0);
+  cursor.setMinutes(cursor.getMinutes()+1);
+
+  // Search forward up to 8 days for allowed chime moments.
+  const end=new Date(cursor.getTime()+8*24*60*60*1000);
+
+  while(cursor<end && result.length<maxCount){
+    const h=cursor.getHours();
+    const m=cursor.getMinutes();
+
+    if(!quietAtHour(h) && mins.includes(m)){
+      result.push(new Date(cursor));
+    }
+    cursor.setMinutes(cursor.getMinutes()+1);
+  }
+  return result;
+}
+
+async function syncLockedPhoneChimes(){
+  const LN=getLocalNotifications();
+  if(!LN)return false;
+
+  try{
+    let perm=await LN.checkPermissions();
+    if(!perm || perm.display!=="granted"){
+      perm=await LN.requestPermissions();
+    }
+
+    if(!perm || perm.display!=="granted"){
+      console.warn("Notification permission not granted.");
+      return false;
+    }
+
+    // Important: remove every previously scheduled notification from this app.
+    // That clears old TestFlight/background schedules that ignored Quiet Hours.
+    await cancelAllLockedChimes();
+
+    if(!enabled || muted)return true;
+
+    const mins=lockedMinutes();
+    const allowedDaily=[];
+
+    for(let hour=0;hour<24;hour++){
+      if(quietAtHour(hour))continue;
+      for(const minute of mins){
+        allowedDaily.push({hour,minute});
+      }
+    }
+
+    const notifications=[];
+    const sound=lockedSoundName();
+
+    // iOS keeps at most 64 pending local notifications per app.
+    // When the daily repeating plan fits, use repeating clock times.
+    if(allowedDaily.length<=64){
+      allowedDaily.forEach((t,i)=>{
+        notifications.push({
+          id:710000+i,
+          title:"Westminster Chimes",
+          body:"Clock chime",
+          sound,
+          silent:true,
+          schedule:{
+            on:{hour:t.hour,minute:t.minute,second:0}
+          },
+          extra:{kind:"westminster-chime"}
+        });
+      });
+    }else{
+      // If Quiet Hours are off or too short, keep the next 64 allowed
+      // chimes scheduled. They are refreshed whenever the app is opened
+      // or a setting changes.
+      nextAllowedTimes(64).forEach((at,i)=>{
+        notifications.push({
+          id:710000+i,
+          title:"Westminster Chimes",
+          body:"Clock chime",
+          sound,
+          silent:true,
+          schedule:{at},
+          extra:{kind:"westminster-chime"}
+        });
+      });
+    }
+
+    if(notifications.length){
+      await LN.schedule({notifications});
+    }
+
+    return true;
+  }catch(e){
+    console.warn("Locked-phone schedule update failed",e);
+    return false;
+  }
+}
+
 
 const names={
   westminster:"Westminster Tower Bells",
@@ -665,13 +836,19 @@ function applyQuietState(now){
   return quiet;
 }
 
-function saveQuietSettings(){
+async function saveQuietSettings(){
   localStorage.setItem("quietEnabled",String(quietEnabled.checked));
   localStorage.setItem("quietStart",quietStart.value);
   localStorage.setItem("quietEnd",quietEnd.value);
 
   applyQuietState(new Date());
   updateDescription();
+
+  // Rebuild the locked-phone schedule immediately so Quiet Hours
+  // also apply while the screen is locked.
+  if(enabled){
+    await syncLockedPhoneChimes();
+  }
 }
 
 function checkChime(now){
@@ -753,10 +930,14 @@ function updateDescription(){
     getName()+" selected. Press Start Chimes.";
 }
 
-startButton.addEventListener("click",()=>{
+startButton.addEventListener("click",async ()=>{
   enabled=true;
   muted=false;
   muteButton.textContent="Mute";
+
+  // Always rebuild the iPhone lock-screen schedule. This first clears
+  // any older scheduled notifications that did not obey Quiet Hours.
+  await syncLockedPhoneChimes();
 
   if(applyQuietState(new Date())){
     statusDisplay.textContent=
@@ -797,12 +978,20 @@ testButton.addEventListener("click",()=>{
   );
 });
 
-stopButton.addEventListener("click",()=>{
+stopButton.addEventListener("click",async ()=>{
   enabled=false;
+  await cancelAllLockedChimes();
+
+  if(audioContext && audioContext.state!=="closed"){
+    try{ await audioContext.close(); }catch(e){}
+    audioContext=null;
+    masterGain=null;
+  }
+
   statusDisplay.textContent="Automatic chimes are stopped.";
 });
 
-muteButton.addEventListener("click",()=>{
+muteButton.addEventListener("click",async ()=>{
   if(applyQuietState(new Date())){
     statusDisplay.textContent=
       "Quiet Hours are active — the audio engine is already off.";
@@ -819,13 +1008,21 @@ muteButton.addEventListener("click",()=>{
     audioContext.currentTime
   );
 
+  await syncLockedPhoneChimes();
+
   statusDisplay.textContent=muted
     ?"Sound is muted."
     :"Sound is unmuted.";
 });
 
-soundChoice.addEventListener("change",updateDescription);
-scheduleChoice.addEventListener("change",updateDescription);
+soundChoice.addEventListener("change",async ()=>{
+  updateDescription();
+  if(enabled)await syncLockedPhoneChimes();
+});
+scheduleChoice.addEventListener("change",async ()=>{
+  updateDescription();
+  if(enabled)await syncLockedPhoneChimes();
+});
 quietEnabled.addEventListener("change",saveQuietSettings);
 quietStart.addEventListener("change",saveQuietSettings);
 quietEnd.addEventListener("change",saveQuietSettings);
@@ -848,16 +1045,18 @@ updateDescription();
 applyQuietState(new Date());
 updateClock();
 
-document.addEventListener("visibilitychange",()=>{
+document.addEventListener("visibilitychange",async ()=>{
   if(!document.hidden){
     applyQuietState(new Date());
     updateClock();
+    if(enabled)await syncLockedPhoneChimes();
   }
 });
 
-window.addEventListener("focus",()=>{
+window.addEventListener("focus",async ()=>{
   applyQuietState(new Date());
   updateClock();
+  if(enabled)await syncLockedPhoneChimes();
 });
 
 setInterval(updateClock,500);
