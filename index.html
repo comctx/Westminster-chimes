@@ -281,18 +281,18 @@ function lockedMinutes(){
   return [0,15,30,45];
 }
 
-function lockedSoundName(){
-  // If matching custom notification sounds are bundled, iOS will use them.
-  // If a file is unavailable, iOS falls back to the default notification sound.
-  const map={
-    westminster:"westminster.wav",
-    bigben:"bigben.wav",
-    whittington:"whittington.wav",
-    stmichael:"stmichael.wav",
-    canterbury:"canterbury.wav",
-    cuckoo:"cuckoo.wav"
-  };
-  return map[getStyle()] || "westminster.wav";
+function lockedSoundName(hour,minute){
+  const style=getStyle();
+  const h=((Number(hour)+11)%12)+1;
+
+  if(Number(minute)===0){
+    return `${style}-h${h}.wav`;
+  }
+
+  return `${style}-m${Number(minute)}.wav`;
+}
+
+
 }
 
 async function cancelAllLockedChimes(){
@@ -371,18 +371,19 @@ async function syncLockedPhoneChimes(){
     }
 
     const notifications=[];
-    const sound=lockedSoundName();
+    
 
     // iOS keeps at most 64 pending local notifications per app.
     // When the daily repeating plan fits, use repeating clock times.
     if(allowedDaily.length<=64){
       allowedDaily.forEach((t,i)=>{
+        const sound=lockedSoundName(t.hour,t.minute);
         notifications.push({
           id:710000+i,
           title:"Westminster Chimes",
           body:"Clock chime",
           sound,
-          silent:true,
+          
           schedule:{
             on:{hour:t.hour,minute:t.minute,second:0}
           },
@@ -394,12 +395,13 @@ async function syncLockedPhoneChimes(){
       // chimes scheduled. They are refreshed whenever the app is opened
       // or a setting changes.
       nextAllowedTimes(64).forEach((at,i)=>{
+        const sound=lockedSoundName(at.getHours(),at.getMinutes());
         notifications.push({
           id:710000+i,
           title:"Westminster Chimes",
           body:"Clock chime",
           sound,
-          silent:true,
+          
           schedule:{at},
           extra:{kind:"westminster-chime"}
         });
