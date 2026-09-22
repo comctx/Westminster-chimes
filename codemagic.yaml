@@ -30,8 +30,13 @@ workflows:
           rm -rf ios www
           mkdir -p www
           cp index.html www/index.html
-          if [ -f support.html ]; then cp support.html www/support.html; fi
+
+          if [ -f support.html ]; then
+            cp support.html www/support.html
+          fi
+
           node generate-chimes.cjs www/sounds
+
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.donaldreckman.westminsterchimes",
@@ -39,8 +44,10 @@ workflows:
             "webDir": "www"
           }
           EOF
+
           npx cap add ios
           npx cap sync ios
+
       - name: Add Westminster Chimes app icon
         script: |
           set -eu
@@ -53,6 +60,7 @@ workflows:
           rm -rf "$ICON_DIR"
           mkdir -p "$ICON_DIR"
 
+          # iPhone icons
           sips -z 40 40 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20@2x.png" >/dev/null
           sips -z 60 60 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20@3x.png" >/dev/null
           sips -z 58 58 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-29@2x.png" >/dev/null
@@ -62,20 +70,131 @@ workflows:
           sips -z 120 120 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-60@2x.png" >/dev/null
           sips -z 180 180 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-60@3x.png" >/dev/null
 
+          # iPad icons
+          sips -z 20 20 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20.png" >/dev/null
+          sips -z 40 40 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20@2x-ipad.png" >/dev/null
+          sips -z 29 29 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-29.png" >/dev/null
+          sips -z 58 58 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-29@2x-ipad.png" >/dev/null
+          sips -z 40 40 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-40.png" >/dev/null
+          sips -z 80 80 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-40@2x-ipad.png" >/dev/null
+          sips -z 76 76 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-76.png" >/dev/null
+          sips -z 152 152 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-76@2x.png" >/dev/null
+          sips -z 167 167 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-83.5@2x.png" >/dev/null
+
+          # App Store icon
           cp "$ICON_SOURCE" "$ICON_DIR/AppIcon-1024.png"
 
           cat > "$ICON_DIR/Contents.json" <<'EOF'
           {
             "images": [
-              {"idiom":"iphone","size":"20x20","scale":"2x","filename":"AppIcon-20@2x.png"},
-              {"idiom":"iphone","size":"20x20","scale":"3x","filename":"AppIcon-20@3x.png"},
-              {"idiom":"iphone","size":"29x29","scale":"2x","filename":"AppIcon-29@2x.png"},
-              {"idiom":"iphone","size":"29x29","scale":"3x","filename":"AppIcon-29@3x.png"},
-              {"idiom":"iphone","size":"40x40","scale":"2x","filename":"AppIcon-40@2x.png"},
-              {"idiom":"iphone","size":"40x40","scale":"3x","filename":"AppIcon-40@3x.png"},
-              {"idiom":"iphone","size":"60x60","scale":"2x","filename":"AppIcon-60@2x.png"},
-              {"idiom":"iphone","size":"60x60","scale":"3x","filename":"AppIcon-60@3x.png"},
-              {"idiom":"ios-marketing","size":"1024x1024","scale":"1x","filename":"AppIcon-1024.png"}
+              {
+                "idiom": "iphone",
+                "size": "20x20",
+                "scale": "2x",
+                "filename": "AppIcon-20@2x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "20x20",
+                "scale": "3x",
+                "filename": "AppIcon-20@3x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "29x29",
+                "scale": "2x",
+                "filename": "AppIcon-29@2x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "29x29",
+                "scale": "3x",
+                "filename": "AppIcon-29@3x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "40x40",
+                "scale": "2x",
+                "filename": "AppIcon-40@2x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "40x40",
+                "scale": "3x",
+                "filename": "AppIcon-40@3x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "60x60",
+                "scale": "2x",
+                "filename": "AppIcon-60@2x.png"
+              },
+              {
+                "idiom": "iphone",
+                "size": "60x60",
+                "scale": "3x",
+                "filename": "AppIcon-60@3x.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "20x20",
+                "scale": "1x",
+                "filename": "AppIcon-20.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "20x20",
+                "scale": "2x",
+                "filename": "AppIcon-20@2x-ipad.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "29x29",
+                "scale": "1x",
+                "filename": "AppIcon-29.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "29x29",
+                "scale": "2x",
+                "filename": "AppIcon-29@2x-ipad.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "40x40",
+                "scale": "1x",
+                "filename": "AppIcon-40.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "40x40",
+                "scale": "2x",
+                "filename": "AppIcon-40@2x-ipad.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "76x76",
+                "scale": "1x",
+                "filename": "AppIcon-76.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "76x76",
+                "scale": "2x",
+                "filename": "AppIcon-76@2x.png"
+              },
+              {
+                "idiom": "ipad",
+                "size": "83.5x83.5",
+                "scale": "2x",
+                "filename": "AppIcon-83.5@2x.png"
+              },
+              {
+                "idiom": "ios-marketing",
+                "size": "1024x1024",
+                "scale": "1x",
+                "filename": "AppIcon-1024.png"
+              }
             ],
             "info": {
               "author": "xcode",
@@ -83,31 +202,45 @@ workflows:
             }
           }
           EOF
+
       - name: Include notification sounds and set build number
         script: |
           set -eu
+
           mkdir -p ios/App/ChimeSounds
           cp www/sounds/*.wav ios/App/ChimeSounds/
+
           if ! gem list -i xcodeproj >/dev/null; then
             gem install xcodeproj --no-document
           fi
+
           ruby <<'RUBY'
           require 'xcodeproj'
+
           project = Xcodeproj::Project.open('ios/App/App.xcodeproj')
           target = project.targets.find { |item| item.name == 'App' }
+
           abort 'App target not found' unless target
+
           group = project.main_group.new_group('ChimeSounds', 'ChimeSounds')
           files = Dir.glob('ios/App/ChimeSounds/*.wav').sort
+
           abort 'Expected 88 chime recordings' unless files.length == 88
+
           files.each do |file|
             reference = group.new_file(File.basename(file))
             target.resources_build_phase.add_file_reference(reference)
           end
+
           project.save
           RUBY
-          CHIMES_BUILD_NUMBER=16
+
+          CHIMES_BUILD_NUMBER=17
+
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
+
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
+
           echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
 
       - name: Apply Apple signing
@@ -125,6 +258,7 @@ workflows:
       - name: Verify sounds in the finished app
         script: |
           set -eu
+
           python3 <<'PY'
           import glob
           import io
@@ -138,12 +272,14 @@ workflows:
 
           with zipfile.ZipFile(archives[0]) as archive:
               names = archive.namelist()
+
               info = next(
                   n for n in names
                   if n.startswith('Payload/')
                   and n.count('/') == 2
                   and n.endswith('/Info.plist')
               )
+
               root = info.rsplit('/', 1)[0] + '/'
               metadata = plistlib.loads(archive.read(info))
 
@@ -155,10 +291,18 @@ workflows:
 
               for sound in sounds:
                   data = archive.read(root + sound.name)
-                  assert data == archive.read(root + 'public/sounds/' + sound.name)
+
+                  assert data == archive.read(
+                      root + 'public/sounds/' + sound.name
+                  )
 
                   with wave.open(io.BytesIO(data)) as recording:
-                      assert recording.getnframes() / recording.getframerate() < 30
+                      duration = (
+                          recording.getnframes()
+                          / recording.getframerate()
+                      )
+
+                      assert duration < 30
 
               print(
                   'Verified all 88 sounds in the iPhone app. Build:',
