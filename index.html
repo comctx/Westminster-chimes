@@ -150,7 +150,7 @@ input[type=range]{width:100%}
 <main class="clock">
   <h1>Clock Tower Chimes</h1>
   <div class="subtitle">Traditional clocks and tower melodies</div>
-  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v3</div>
+  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v4</div>
   <div class="bell" id="clockIcon">🔔</div>
 
   <div id="time">--:--:--</div>
@@ -244,7 +244,7 @@ const quietStatus=$("quietStatus");
 
 let audioContext;
 let masterGain;
-let enabled=false;
+let enabled=localStorage.getItem("chimesEnabled")==="true";
 let muted=false;
 
 let lastChimeKey="";
@@ -844,10 +844,13 @@ async function saveQuietSettings(){
   applyQuietState(new Date());
   updateDescription();
 
-  // Rebuild the locked-phone schedule immediately so Quiet Hours
-  // also apply while the screen is locked.
+  // Always reconcile the iPhone lock-screen schedule immediately.
+  // This is important even after the app has been closed/reopened, because
+  // iOS can keep older pending notifications alive until we cancel/rebuild them.
   if(enabled){
     await syncLockedPhoneChimes();
+  }else{
+    await cancelAllLockedChimes();
   }
 }
 
@@ -932,6 +935,7 @@ function updateDescription(){
 
 startButton.addEventListener("click",async ()=>{
   enabled=true;
+  localStorage.setItem("chimesEnabled","true");
   muted=false;
   muteButton.textContent="Mute";
 
@@ -980,6 +984,7 @@ testButton.addEventListener("click",()=>{
 
 stopButton.addEventListener("click",async ()=>{
   enabled=false;
+  localStorage.setItem("chimesEnabled","false");
   await cancelAllLockedChimes();
 
   if(audioContext && audioContext.state!=="closed"){
@@ -1045,18 +1050,37 @@ updateDescription();
 applyQuietState(new Date());
 updateClock();
 
+// FIX v4: reconcile native scheduled chimes every time the app starts.
+// This clears stale notifications from an older build/session and rebuilds
+// only the times allowed by the saved Quiet Hours settings.
+(async ()=>{
+  if(enabled){
+    await syncLockedPhoneChimes();
+  }else{
+    await cancelAllLockedChimes();
+  }
+})();
+
 document.addEventListener("visibilitychange",async ()=>{
   if(!document.hidden){
     applyQuietState(new Date());
     updateClock();
-    if(enabled)await syncLockedPhoneChimes();
+    if(enabled){
+      await syncLockedPhoneChimes();
+    }else{
+      await cancelAllLockedChimes();
+    }
   }
 });
 
 window.addEventListener("focus",async ()=>{
   applyQuietState(new Date());
   updateClock();
-  if(enabled)await syncLockedPhoneChimes();
+  if(enabled){
+    await syncLockedPhoneChimes();
+  }else{
+    await cancelAllLockedChimes();
+  }
 });
 
 setInterval(updateClock,500);
