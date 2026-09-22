@@ -41,7 +41,48 @@ workflows:
           EOF
           npx cap add ios
           npx cap sync ios
+      - name: Add Westminster Chimes app icon
+        script: |
+          set -eu
 
+          ICON_SOURCE="Westminster_Chimes_AppIcon.png"
+          ICON_DIR="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+
+          test -f "$ICON_SOURCE"
+
+          rm -rf "$ICON_DIR"
+          mkdir -p "$ICON_DIR"
+
+          sips -z 40 40 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20@2x.png" >/dev/null
+          sips -z 60 60 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-20@3x.png" >/dev/null
+          sips -z 58 58 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-29@2x.png" >/dev/null
+          sips -z 87 87 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-29@3x.png" >/dev/null
+          sips -z 80 80 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-40@2x.png" >/dev/null
+          sips -z 120 120 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-40@3x.png" >/dev/null
+          sips -z 120 120 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-60@2x.png" >/dev/null
+          sips -z 180 180 "$ICON_SOURCE" --out "$ICON_DIR/AppIcon-60@3x.png" >/dev/null
+
+          cp "$ICON_SOURCE" "$ICON_DIR/AppIcon-1024.png"
+
+          cat > "$ICON_DIR/Contents.json" <<'EOF'
+          {
+            "images": [
+              {"idiom":"iphone","size":"20x20","scale":"2x","filename":"AppIcon-20@2x.png"},
+              {"idiom":"iphone","size":"20x20","scale":"3x","filename":"AppIcon-20@3x.png"},
+              {"idiom":"iphone","size":"29x29","scale":"2x","filename":"AppIcon-29@2x.png"},
+              {"idiom":"iphone","size":"29x29","scale":"3x","filename":"AppIcon-29@3x.png"},
+              {"idiom":"iphone","size":"40x40","scale":"2x","filename":"AppIcon-40@2x.png"},
+              {"idiom":"iphone","size":"40x40","scale":"3x","filename":"AppIcon-40@3x.png"},
+              {"idiom":"iphone","size":"60x60","scale":"2x","filename":"AppIcon-60@2x.png"},
+              {"idiom":"iphone","size":"60x60","scale":"3x","filename":"AppIcon-60@3x.png"},
+              {"idiom":"ios-marketing","size":"1024x1024","scale":"1x","filename":"AppIcon-1024.png"}
+            ],
+            "info": {
+              "author": "xcode",
+              "version": 1
+            }
+          }
+          EOF
       - name: Include notification sounds and set build number
         script: |
           set -eu
@@ -64,7 +105,7 @@ workflows:
           end
           project.save
           RUBY
-          CHIMES_BUILD_NUMBER=15
+          CHIMES_BUILD_NUMBER=16
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
           echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
