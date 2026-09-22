@@ -64,7 +64,7 @@ workflows:
           end
           project.save
           RUBY
-          CHIMES_BUILD_NUMBER=$(( ${PROJECT_BUILD_NUMBER:?Missing project build number} + 2 ))
+          CHIMES_BUILD_NUMBER=15
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
           echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
