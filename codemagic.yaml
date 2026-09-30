@@ -32,6 +32,7 @@ workflows:
           cp index.html www/index.html
           cp chime-tones.js www/chime-tones.js
           cp quiet-schedules.js www/quiet-schedules.js
+          cp focus-intervals.js www/focus-intervals.js
 
           if [ -f support.html ]; then
             cp support.html www/support.html
@@ -237,7 +238,7 @@ workflows:
           project.save
           RUBY
 
-          CHIMES_BUILD_NUMBER=19
+          CHIMES_BUILD_NUMBER=20
 
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
 

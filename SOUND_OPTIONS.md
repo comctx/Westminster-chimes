@@ -21,3 +21,13 @@ Sleep, Work, and Weekend are editable presets with separate enable switches, sta
 Existing quiet-hour settings migrate into Sleep; Work and Weekend start disabled. Schedules persist under `quietSchedulesV1`. The shared `quiet-schedules.js` evaluates both on-screen silence and native notification times. Native updates are serialized and cancel old notifications before rebuilding. Daily or weekly repeating schedules are used when they fit the iOS limit; otherwise the next 64 notifications are scheduled and the UI displays the coverage end and a reminder to reopen the app.
 
 Run `node tests/quiet-schedules.cjs` for schedule boundary and migration tests. No vibration mode is included.
+
+## Focus Mode — interval chimes (build 20)
+
+Choose Focus Mode and an interval of 5, 10, 15, 25, 30, or 60 minutes, then press Start Focus. The first chime comes one full interval after Start. Starting again or changing the interval/mode while running creates a fresh starting time. Sound changes and reopening the app preserve the starting time. Stop ends the schedule; switching back to Clock chimes restores the existing hourly/quarter-hour choice.
+
+Focus uses a short rendition of the selected sound (quarter-hour melody for classic bells; one cuckoo call). Quiet Hours suppresses interval chimes without shifting subsequent intervals. Missed intervals are not replayed on reopening. Interval choice, mode, starting time and the latest foreground chime are saved locally. A countdown shows the next interval, including a Quiet Hours or muted indicator when applicable.
+
+Locked-screen Focus alerts use the same existing bundled sound files, with up to 64 future allowed notifications. The displayed coverage date tells the user when to reopen the app to refresh them. iPhone notification settings still apply. Device testing remains required after installing build 20.
+
+Run `node tests/focus-intervals.cjs`, `node tests/app-settings.cjs`, and `node tests/quiet-schedules.cjs` for timing, persistence, quiet-window, and native scheduling checks.

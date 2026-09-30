@@ -184,6 +184,23 @@ h2{font-size:21px;margin:0}
     </div>
 
     <div>
+      <label for="chimeMode">Chime mode</label>
+      <select id="chimeMode">
+        <option value="clock">Clock chimes</option>
+        <option value="focus">Focus Mode — interval chimes</option>
+      </select>
+    </div>
+    <div id="focusControls" hidden>
+      <label for="focusInterval">Chime every</label>
+      <select id="focusInterval">
+        <option value="5">5 minutes</option><option value="10">10 minutes</option>
+        <option value="15">15 minutes</option><option value="25">25 minutes</option>
+        <option value="30">30 minutes</option><option value="60">60 minutes</option>
+      </select>
+      <p class="note">Start begins a fresh interval. Quiet Hours skips chimes without changing the timing. Changing the interval while running restarts it.</p>
+      <p id="focusCountdown" style="color:#f3cf62;font-weight:bold"></p>
+    </div>
+    <div id="clockScheduleControls">
       <label for="scheduleChoice">Chime schedule</label>
       <select id="scheduleChoice">
         <option value="quarters">Every Quarter Hour</option>
@@ -228,6 +245,7 @@ h2{font-size:21px;margin:0}
 
 <script src="chime-tones.js"></script>
 <script src="quiet-schedules.js"></script>
+<script src="focus-intervals.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 
@@ -236,6 +254,19 @@ const dateDisplay=$("date");
 const statusDisplay=$("status");
 const soundChoice=$("soundChoice");
 const scheduleChoice=$("scheduleChoice");
+const chimeMode=$("chimeMode");
+const focusInterval=$("focusInterval");
+chimeMode.value=localStorage.getItem("chimeMode")==="focus"?"focus":"clock";
+focusInterval.value=String(FocusIntervals.interval(localStorage.getItem("focusInterval")));
+let focusAnchor=Number(localStorage.getItem("focusAnchor"));
+if(!Number.isFinite(focusAnchor)||focusAnchor<=0||focusAnchor>Date.now())focusAnchor=0;
+let lastFocusChime=Number(localStorage.getItem("lastFocusChime"))||0;
+function isFocus(){return chimeMode.value==="focus";}
+function restartFocus(){
+  focusAnchor=Date.now();lastFocusChime=0;
+  localStorage.setItem("focusAnchor",String(focusAnchor));
+  localStorage.setItem("lastFocusChime","0");
+}
 const startButton=$("startButton");
 const testButton=$("testButton");
 const stopButton=$("stopButton");
@@ -252,6 +283,7 @@ let audioContext;
 let masterGain;
 let enabled=localStorage.getItem("chimesEnabled")==="true";
 let muted=false;
+if(enabled&&isFocus()&&!focusAnchor)restartFocus();
 
 let lastChimeKey="";
 
@@ -280,6 +312,7 @@ function lockedMinutes(){
 
 function lockedSoundName(hour,minute){
   const style=getStyle();
+  if(isFocus())return `${style}-m${style==="cuckoo"?30:15}.wav`;
   const h=((Number(hour)+11)%12)+1;
 
   if(style==="ship" && Number(minute)===30)return `ship-h${h}-m30.wav`;
@@ -335,14 +368,16 @@ async function rebuildLockedPhoneChimes(){
       return false;
     }
 
-    const plan=QuietSchedules.plan(quietSchedules,lockedMinutes());
+    const plan=isFocus()
+      ?{kind:"rolling",times:FocusIntervals.nextTimes(focusAnchor,focusInterval.value,64,isQuietTime)}
+      :QuietSchedules.plan(quietSchedules,lockedMinutes());
     const notifications=plan.times.map((t,i)=>{
       const rolling=plan.kind==="rolling";
       const hour=rolling?t.getHours():t.hour;
       const minute=rolling?t.getMinutes():t.minute;
       const notification={
         id:710000+i,title:"Westminster Chimes",
-        body:"Clock chime",
+        body:isFocus()?"Focus interval complete":"Clock chime",
         schedule:rolling?{at:t}:{on:{...t,second:0}},
         extra:{kind:"westminster-chime"}
       };
@@ -353,6 +388,8 @@ async function rebuildLockedPhoneChimes(){
     $("scheduleCoverage").textContent=plan.kind==="rolling"&&plan.times.length
       ?"Locked-screen alerts are scheduled through "+plan.times.at(-1).toLocaleString()+". Open the app regularly to refresh them."
       :"";
+
+    if(isFocus()&&!notifications.length)$("scheduleCoverage").textContent="No focus alerts in the next 15 days under your Quiet Hours settings.";
 
     if(notifications.length){
       await LN.schedule({notifications});
@@ -830,11 +867,34 @@ async function saveQuietSettings(){
   }
 }
 
+function playFocusChime(){
+  if(!enabled||muted||isQuietTime(new Date())||!prepareAudio())return;
+  statusDisplay.textContent="Focus interval complete — "+getName()+".";
+  if(getStyle()==="cuckoo"){playCuckooCalls(1);return;}
+  if(ChimeTones.presets[getStyle()]){playTone(15,1);return;}
+  playSequence(15);
+}
+function updateFocusCountdown(now){
+  if(!isFocus())return;
+  if(!enabled||!focusAnchor){$("focusCountdown").textContent="Press Start Focus to begin.";return;}
+  const next=FocusIntervals.nextAt(focusAnchor,focusInterval.value,now.getTime());
+  const remaining=Math.max(0,Math.ceil((next-now.getTime())/1000));
+  $("focusCountdown").textContent="Next interval in "+Math.floor(remaining/60)+":"+String(remaining%60).padStart(2,"0")+
+    (isQuietTime(now)?" · Quiet Hours active":muted?" · Muted":"");
+}
 function checkChime(now){
   const quiet=applyQuietState(now);
 
   if(!enabled)return;
   if(quiet)return;
+  if(isFocus()){
+    const due=FocusIntervals.dueAt(focusAnchor,focusInterval.value,now.getTime());
+    if(due!==null&&due!==lastFocusChime){
+      lastFocusChime=due;localStorage.setItem("lastFocusChime",String(due));
+      playFocusChime();
+    }
+    return;
+  }
 
   const minutes=now.getMinutes();
   const seconds=now.getSeconds();
@@ -881,6 +941,7 @@ function updateClock(){
   });
 
   checkChime(now);
+  updateFocusCountdown(now);
 }
 
 function updateDescription(){
@@ -907,6 +968,12 @@ function updateDescription(){
     if(getStyle()==="ship")scheduleNote.textContent+=" Watch bells count 1–8 at the hour and half-hour; quarter-hours use one bell.";
   }
 
+  $("focusControls").hidden=!isFocus();
+  $("clockScheduleControls").hidden=isFocus();
+  startButton.textContent=isFocus()?"Start Focus":"Start Chimes";
+  stopButton.textContent=isFocus()?"Stop Focus":"Stop Chimes";
+  if(isFocus())scheduleNote.textContent="Plays "+getName()+" every "+focusInterval.value+" minutes from Start. Quiet intervals are skipped; timing continues.";
+  updateFocusCountdown(new Date());
   const count=quietSchedules.filter(s=>s.enabled&&s.days.length).length;
   if(count)scheduleNote.textContent+=" "+count+" quiet schedule(s) enabled.";
 
@@ -916,6 +983,7 @@ function updateDescription(){
 
 startButton.addEventListener("click",async ()=>{
   enabled=true;
+  if(isFocus())restartFocus();
   localStorage.setItem("chimesEnabled","true");
   muted=false;
   muteButton.textContent="Mute";
@@ -931,7 +999,7 @@ startButton.addEventListener("click",async ()=>{
   }
 
   prepareAudio();
-  statusDisplay.textContent=getName()+" is on.";
+  statusDisplay.textContent=isFocus()?"Focus started — chimes every "+focusInterval.value+" minutes.":getName()+" is on.";
 });
 
 testButton.addEventListener("click",()=>{
@@ -977,7 +1045,8 @@ stopButton.addEventListener("click",async ()=>{
     masterGain=null;
   }
 
-  statusDisplay.textContent="Automatic chimes are stopped.";
+  statusDisplay.textContent=isFocus()?"Focus intervals are stopped.":"Automatic chimes are stopped.";
+  updateFocusCountdown(new Date());
 });
 
 muteButton.addEventListener("click",async ()=>{
@@ -1003,6 +1072,17 @@ muteButton.addEventListener("click",async ()=>{
     ?"Sound is muted."
     :"Sound is unmuted.";
 });
+
+async function saveFocusSettings(){
+  localStorage.setItem("chimeMode",chimeMode.value);
+  localStorage.setItem("focusInterval",focusInterval.value);
+  stopAllAudio();
+  if(enabled&&isFocus())restartFocus();
+  updateDescription();applyQuietState(new Date());
+  await syncLockedPhoneChimes();
+}
+chimeMode.addEventListener("change",saveFocusSettings);
+focusInterval.addEventListener("change",saveFocusSettings);
 
 soundChoice.addEventListener("change",async ()=>{
   localStorage.setItem("chimeSound",getStyle());
