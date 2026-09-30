@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Clock Tower Chimes</title>
+<title>Clock Chimes Plus</title>
 
 <style>
 *{box-sizing:border-box}
@@ -158,7 +158,7 @@ h2{font-size:21px;margin:0}
 
 <body>
 <main class="clock">
-  <h1>Clock Tower Chimes</h1>
+  <h1>Clock Chimes Plus</h1>
   <div class="subtitle">Classic chimes and gentle everyday sounds</div>
   <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">20 featured sounds + classic clocks</div>
   <div class="bell" id="clockIcon">🔔</div>
@@ -376,7 +376,7 @@ async function rebuildLockedPhoneChimes(){
       const hour=rolling?t.getHours():t.hour;
       const minute=rolling?t.getMinutes():t.minute;
       const notification={
-        id:710000+i,title:"Westminster Chimes",
+        id:710000+i,title:"Clock Chimes Plus",
         body:isFocus()?"Focus interval complete":"Clock chime",
         schedule:rolling?{at:t}:{on:{...t,second:0}},
         extra:{kind:"westminster-chime"}

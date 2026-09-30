@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: Westminster Chimes iOS Build
+    name: Clock Chimes Plus iOS Build
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -43,7 +43,7 @@ workflows:
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.donaldreckman.westminsterchimes",
-            "appName": "Westminster Chimes",
+            "appName": "Clock Chimes Plus",
             "webDir": "www"
           }
           EOF
@@ -51,7 +51,7 @@ workflows:
           npx cap add ios
           npx cap sync ios
 
-      - name: Add Westminster Chimes app icon
+      - name: Add Clock Chimes Plus app icon
         script: |
           set -eu
 
@@ -238,13 +238,13 @@ workflows:
           project.save
           RUBY
 
-          CHIMES_BUILD_NUMBER=20
+          CHIMES_BUILD_NUMBER=21
 
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
 
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/App/App/Info.plist || true
 
-          echo "Building Westminster Chimes, build $CHIMES_BUILD_NUMBER"
+          echo "Building Clock Chimes Plus, build $CHIMES_BUILD_NUMBER"
 
       - name: Apply Apple signing
         script: |
@@ -288,6 +288,7 @@ workflows:
 
               assert metadata['CFBundleIdentifier'] == 'com.donaldreckman.westminsterchimes'
               assert int(metadata['CFBundleVersion']) > 1
+              assert metadata['CFBundleDisplayName'] == 'Clock Chimes Plus'
 
               sounds = list(Path('www/sounds').glob('*.wav'))
               assert len(sounds) == 385

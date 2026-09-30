@@ -1,7 +1,7 @@
 {
   "name": "westminster-chimes",
   "version": "1.0.0",
-  "description": "Westminster Chimes mobile app",
+  "description": "Clock Chimes Plus mobile app",
   "private": true,
   "scripts": {
     "sync": "npx cap sync ios",
