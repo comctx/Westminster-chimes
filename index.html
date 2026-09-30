@@ -149,8 +149,8 @@ input[type=range]{width:100%}
 <body>
 <main class="clock">
   <h1>Clock Tower Chimes</h1>
-  <div class="subtitle">Traditional clocks and tower melodies</div>
-  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">Quiet Hours Fix v4</div>
+  <div class="subtitle">Classic chimes and gentle everyday sounds</div>
+  <div id="buildMarker" style="margin-top:6px;font-size:12px;opacity:.75;">20 featured sounds + classic clocks</div>
   <div class="bell" id="clockIcon">🔔</div>
 
   <div id="time">--:--:--</div>
@@ -160,12 +160,16 @@ input[type=range]{width:100%}
     <div>
       <label for="soundChoice">Choose a chime</label>
       <select id="soundChoice">
+        <optgroup label="Featured sounds">
         <option value="westminster">Westminster Tower Bells</option>
+        </optgroup>
+        <optgroup label="Other classic clocks">
         <option value="bigben">Big Ben — London</option>
         <option value="whittington">Whittington Chimes</option>
         <option value="stmichael">St. Michael Chimes</option>
         <option value="canterbury">Canterbury Chimes</option>
         <option value="cuckoo">Black Forest Cuckoo Clock</option>
+        </optgroup>
       </select>
     </div>
 
@@ -221,6 +225,7 @@ input[type=range]{width:100%}
   </div>
 </main>
 
+<script src="chime-tones.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 
@@ -285,6 +290,8 @@ function lockedMinutes(){
 function lockedSoundName(hour,minute){
   const style=getStyle();
   const h=((Number(hour)+11)%12)+1;
+
+  if(style==="ship" && Number(minute)===30)return `ship-h${h}-m30.wav`;
 
   if(Number(minute)===0){
     return `${style}-h${h}.wav`;
@@ -423,6 +430,32 @@ const names={
   canterbury:"Canterbury Chimes",
   cuckoo:"Black Forest Cuckoo Clock"
 };
+
+Object.entries(ChimeTones.presets).forEach(([id,preset])=>{
+  names[id]=preset.name;
+  const option=document.createElement("option");
+  option.value=id;
+  option.textContent=preset.name;
+  soundChoice.querySelector("optgroup").appendChild(option);
+});
+soundChoice.value=Object.hasOwn(names,localStorage.getItem("chimeSound"))
+  ?localStorage.getItem("chimeSound"):"westminster";
+scheduleChoice.value=localStorage.getItem("chimeSchedule")==="hourly"?"hourly":"quarters";
+let toneSource=null;
+function stopPreview(){
+  if(toneSource){try{toneSource.stop();}catch(e){} toneSource=null;}
+}
+function playTone(minutes,hour){
+  if(muted||isQuietTime(new Date())||!prepareAudio())return;
+  stopPreview();
+  const samples=ChimeTones.render(getStyle(),minutes,hour,22050);
+  const buffer=audioContext.createBuffer(1,samples.length,22050);
+  buffer.copyToChannel(samples,0);
+  toneSource=audioContext.createBufferSource();
+  toneSource.buffer=buffer;
+  toneSource.connect(masterGain);
+  toneSource.start();
+}
 
 const notes={
   westminster:{
@@ -746,6 +779,8 @@ function playAutomatic(minutes,hour){
     return;
   }
 
+  if(ChimeTones.presets[getStyle()]){playTone(minutes,hour);return;}
+
   playSequence(minutes);
 
   if(minutes===0){
@@ -923,6 +958,14 @@ function updateDescription(){
       :"The selected melody plays every quarter hour.";
   }
 
+  if(ChimeTones.presets[getStyle()]){
+    scheduleNote.textContent=hourly
+      ?"Your selected sound plays on the hour."
+      :"Your selected sound plays every quarter hour.";
+    if(getStyle()==="hourstrike")scheduleNote.textContent+=" Counts the hour from 1 to 12.";
+    if(getStyle()==="ship")scheduleNote.textContent+=" Watch bells count 1–8 at the hour and half-hour; quarter-hours use one bell.";
+  }
+
   if(quietEnabled.checked){
     scheduleNote.textContent += " Quiet Hours: "+
       hourLabel(Number(quietStart.value))+" to "+
@@ -971,6 +1014,8 @@ testButton.addEventListener("click",()=>{
     playCuckooCalls(2);
     return;
   }
+
+  if(ChimeTones.presets[getStyle()]){playTone(0,1);return;}
 
   playSequence(0);
   const style=getMusicStyle();
@@ -1021,10 +1066,18 @@ muteButton.addEventListener("click",async ()=>{
 });
 
 soundChoice.addEventListener("change",async ()=>{
+  localStorage.setItem("chimeSound",getStyle());
+  stopPreview();
+  if(audioContext && audioContext.state!=="closed"){
+    try{await audioContext.close();}catch(e){}
+    audioContext=null;
+    masterGain=null;
+  }
   updateDescription();
   if(enabled)await syncLockedPhoneChimes();
 });
 scheduleChoice.addEventListener("change",async ()=>{
+  localStorage.setItem("chimeSchedule",scheduleChoice.value);
   updateDescription();
   if(enabled)await syncLockedPhoneChimes();
 });

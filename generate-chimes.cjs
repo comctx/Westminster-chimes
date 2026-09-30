@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const tones = require('./chime-tones.js');
 const rate = 22050;
 const output = path.resolve(process.argv[2] || 'www/sounds');
 fs.mkdirSync(output, { recursive: true });
@@ -183,6 +184,14 @@ function render(style, minute, hour, filename) {
     throw new Error('Invalid sound: '+filename);
   }
 
+  writeWav(samples,filename,.85);
+}
+
+function writeWav(samples,filename,level){
+  const length=samples.length;
+  let peak=0;
+  for(const sample of samples)peak=Math.max(peak,Math.abs(sample));
+  if(!peak || length/rate>=30)throw new Error('Invalid sound: '+filename);
   const wav=Buffer.alloc(44+length*2);
 
   wav.write('RIFF',0);
@@ -201,7 +210,7 @@ function render(style, minute, hour, filename) {
 
   for(let i=0;i<length;i++) {
     wav.writeInt16LE(
-      Math.round(samples[i]/peak*.85*32767),
+      Math.round(samples[i]/peak*level*32767),
       44+i*2
     );
   }
@@ -230,4 +239,19 @@ for(const style of [
   }
 }
 
+for(const style of Object.keys(tones.presets)){
+  for(let hour=1;hour<=12;hour++){
+    writeWav(tones.render(style,0,hour,rate),`${style}-h${hour}.wav`,.65);
+    total++;
+  }
+  for(const minute of [15,30,45]){
+    // Ship watch count at half-hours depends on the hour, so generate variants below.
+    writeWav(tones.render(style,minute,1,rate),`${style}-m${minute}.wav`,.65);
+    total++;
+  }
+}
+for(let hour=1;hour<=12;hour++){
+  writeWav(tones.render('ship',30,hour,rate),`ship-h${hour}-m30.wav`,.65);
+  total++;
+}
 console.log(`Created ${total} chime recordings in ${output}`);
