@@ -13,3 +13,11 @@ Sound and schedule selections persist locally. Quiet Hours continues to block pr
 `node generate-chimes.cjs www/sounds` generates 385 mono 16-bit PCM WAVs at 22050 Hz, each shorter than 30 seconds. This includes the original 88 recordings, 285 variants for the 19 added sounds, and 12 hour-specific ship half-hour variants. Codemagic bundles the shared JavaScript and checks all WAVs in the finished IPA. The next configured iOS build is 18.
 
 Local checks cover JavaScript syntax, YAML parsing, all generated WAV formats/durations/levels, default and saved choices, notification filename coverage, overnight Quiet Hours scheduling, blocked previews during Quiet Hours, and watch/hour counts. Actual sound quality, lock-screen delivery, and Quiet Hours still need verification on an iPhone after building and installing the update.
+
+## Multiple quiet schedules (build 19)
+
+Sleep, Work, and Weekend are editable presets with separate enable switches, start/end times, and weekdays. Additional schedules can be added or removed. All matching schedules are combined: any match suppresses both automatic and test chimes. Overnight selections refer to the day the quiet period starts; equal times mean the entire selected calendar day. Schedules with no selected weekdays have no effect.
+
+Existing quiet-hour settings migrate into Sleep; Work and Weekend start disabled. Schedules persist under `quietSchedulesV1`. The shared `quiet-schedules.js` evaluates both on-screen silence and native notification times. Native updates are serialized and cancel old notifications before rebuilding. Daily or weekly repeating schedules are used when they fit the iOS limit; otherwise the next 64 notifications are scheduled and the UI displays the coverage end and a reminder to reopen the app.
+
+Run `node tests/quiet-schedules.cjs` for schedule boundary and migration tests. No vibration mode is included.

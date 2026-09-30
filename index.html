@@ -77,7 +77,7 @@ label{
   font-weight:bold;
 }
 
-select{
+input[type=time],input[type=text],select{
   width:100%;
   min-height:48px;
   padding:10px;
@@ -126,6 +126,16 @@ button{
 
 input[type=range]{width:100%}
 
+summary{cursor:pointer;padding:15px 8px;text-align:left;color:#f3cf62;font-weight:bold;min-height:48px}
+details{border-bottom:1px solid #596982}
+.quiet-card{text-align:left;margin:16px 0;padding:12px;border:1px solid #596982;border-radius:10px;min-width:0}
+.quiet-card legend{color:#f3cf62;font-weight:bold}
+.quiet-card label{margin:10px 0}
+.quiet-card input[type=checkbox]{width:22px;height:22px;vertical-align:middle}
+.quiet-days{display:flex;flex-wrap:wrap;gap:8px}
+.quiet-days label{display:flex;align-items:center;gap:3px;min-height:44px}
+.quiet-card button,#addQuietSchedule{background:#35465f;width:100%}
+h2{font-size:21px;margin:0}
 .quiet-box{margin-top:14px;padding:14px;border:1px solid #596982;border-radius:12px;background:rgba(255,255,255,.04)}
 .quiet-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;color:#f3cf62;font-weight:bold}
 .quiet-toggle input{width:22px;height:22px}
@@ -182,24 +192,15 @@ input[type=range]{width:100%}
     </div>
 
     <div class="quiet-box">
-      <label class="quiet-toggle" for="quietEnabled">
-        <input id="quietEnabled" type="checkbox">
-        Quiet Hours
-      </label>
-      <div class="quiet-times">
-        <div>
-          <label for="quietStart">Quiet from</label>
-          <select id="quietStart"></select>
-        </div>
-        <div>
-          <label for="quietEnd">Resume at</label>
-          <select id="quietEnd"></select>
-        </div>
-      </div>
-      <div id="quietStatus" style="margin-top:10px;font-weight:700;"></div>
+      <h2>Quiet-hour schedules</h2>
+      <p class="note">Turn on any schedules you need. If any active schedule matches, all alerts pause. For overnight hours, choose the days the quiet period starts. Equal start and end times means all day.</p>
+      <div id="quietSchedules"></div>
+      <button type="button" id="addQuietSchedule">Add quiet schedule</button>
+      <div id="quietStatus" role="status" style="margin-top:10px;font-weight:700;"></div>
     </div>
   </div>
 
+  <p id="scheduleCoverage" class="note" role="status"></p>
   <div id="status">Press Start Chimes to begin.</div>
 
   <div class="buttons">
@@ -226,6 +227,7 @@ input[type=range]{width:100%}
 </main>
 
 <script src="chime-tones.js"></script>
+<script src="quiet-schedules.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 
@@ -242,9 +244,8 @@ const volumeSlider=$("volume");
 const volumeValue=$("volumeValue");
 const clockIcon=$("clockIcon");
 const scheduleNote=$("scheduleNote");
-const quietEnabled=$("quietEnabled");
-const quietStart=$("quietStart");
-const quietEnd=$("quietEnd");
+const quietSchedulesContainer=$("quietSchedules");
+let quietSchedules=QuietSchedules.load(localStorage);
 const quietStatus=$("quietStatus");
 
 let audioContext;
@@ -270,16 +271,6 @@ function getLocalNotifications(){
   }
 }
 
-function quietAtHour(hour){
-  if(!quietEnabled.checked)return false;
-
-  const start=Number(quietStart.value);
-  const end=Number(quietEnd.value);
-
-  if(start===end)return true;
-  if(start<end)return hour>=start && hour<end;
-  return hour>=start || hour<end;
-}
 
 function lockedMinutes(){
   if(scheduleChoice.value==="hourly")return [0];
@@ -320,35 +311,19 @@ async function cancelAllLockedChimes(){
   }
 }
 
-function nextAllowedTimes(maxCount){
-  const result=[];
-  const mins=lockedMinutes();
 
-  // Start at the next whole minute.
-  let cursor=new Date();
-  cursor.setSeconds(0,0);
-  cursor.setMinutes(cursor.getMinutes()+1);
-
-  // Search forward up to 8 days for allowed chime moments.
-  const end=new Date(cursor.getTime()+8*24*60*60*1000);
-
-  while(cursor<end && result.length<maxCount){
-    const h=cursor.getHours();
-    const m=cursor.getMinutes();
-
-    if(!quietAtHour(h) && mins.includes(m)){
-      result.push(new Date(cursor));
-    }
-    cursor.setMinutes(cursor.getMinutes()+1);
-  }
-  return result;
+let scheduleQueue=Promise.resolve();
+function syncLockedPhoneChimes(){
+  scheduleQueue=scheduleQueue.catch(()=>false).then(rebuildLockedPhoneChimes);
+  return scheduleQueue;
 }
-
-async function syncLockedPhoneChimes(){
+async function rebuildLockedPhoneChimes(){
   const LN=getLocalNotifications();
   if(!LN)return false;
 
   try{
+    if(!await cancelAllLockedChimes())throw new Error("Could not clear previous alerts");
+    if(!enabled || muted){$("scheduleCoverage").textContent="";return true;}
     let perm=await LN.checkPermissions();
     if(!perm || perm.display!=="granted"){
       perm=await LN.requestPermissions();
@@ -356,59 +331,28 @@ async function syncLockedPhoneChimes(){
 
     if(!perm || perm.display!=="granted"){
       console.warn("Notification permission not granted.");
+      $("scheduleCoverage").textContent="Notifications are disabled. Allow notifications in iPhone Settings for locked-screen chimes.";
       return false;
     }
 
-    // Important: remove every previously scheduled notification from this app.
-    // That clears old TestFlight/background schedules that ignored Quiet Hours.
-    await cancelAllLockedChimes();
-
-    if(!enabled || muted)return true;
-
-    const mins=lockedMinutes();
-    const allowedDaily=[];
-
-    for(let hour=0;hour<24;hour++){
-      if(quietAtHour(hour))continue;
-      for(const minute of mins){
-        allowedDaily.push({hour,minute});
-      }
-    }
-
-    const notifications=[];
-
-    // iOS keeps at most 64 pending local notifications per app.
-    // When the daily repeating plan fits, use repeating clock times.
-    if(allowedDaily.length<=64){
-      allowedDaily.forEach((t,i)=>{
-        const sound=lockedSoundName(t.hour,t.minute);
-        notifications.push({
-          id:710000+i,
-          title:"Westminster Chimes",
-          body:"Clock chime",
-          sound,
-          schedule:{
-            on:{hour:t.hour,minute:t.minute,second:0}
-          },
-          extra:{kind:"westminster-chime"}
-        });
-      });
-    }else{
-      // If Quiet Hours are off or too short, keep the next 64 allowed
-      // chimes scheduled. They are refreshed whenever the app is opened
-      // or a setting changes.
-      nextAllowedTimes(64).forEach((at,i)=>{
-        const sound=lockedSoundName(at.getHours(),at.getMinutes());
-        notifications.push({
-          id:710000+i,
-          title:"Westminster Chimes",
-          body:"Clock chime",
-          sound,
-          schedule:{at},
-          extra:{kind:"westminster-chime"}
-        });
-      });
-    }
+    const plan=QuietSchedules.plan(quietSchedules,lockedMinutes());
+    const notifications=plan.times.map((t,i)=>{
+      const rolling=plan.kind==="rolling";
+      const hour=rolling?t.getHours():t.hour;
+      const minute=rolling?t.getMinutes():t.minute;
+      const notification={
+        id:710000+i,title:"Westminster Chimes",
+        body:"Clock chime",
+        schedule:rolling?{at:t}:{on:{...t,second:0}},
+        extra:{kind:"westminster-chime"}
+      };
+      const sound=lockedSoundName(hour,minute);
+      if(sound)notification.sound=sound;
+      return notification;
+    });
+    $("scheduleCoverage").textContent=plan.kind==="rolling"&&plan.times.length
+      ?"Locked-screen alerts are scheduled through "+plan.times.at(-1).toLocaleString()+". Open the app regularly to refresh them."
+      :"";
 
     if(notifications.length){
       await LN.schedule({notifications});
@@ -417,6 +361,7 @@ async function syncLockedPhoneChimes(){
     return true;
   }catch(e){
     console.warn("Locked-phone schedule update failed",e);
+    $("scheduleCoverage").textContent="Could not update locked-screen alerts. Open the app and try Start Chimes again.";
     return false;
   }
 }
@@ -795,39 +740,44 @@ function hourLabel(hour){
   return h+":00 "+suffix;
 }
 
-function fillQuietTimes(){
-  for(let hour=0;hour<24;hour++){
-    const a=document.createElement("option");
-    a.value=String(hour);
-    a.textContent=hourLabel(hour);
-    quietStart.appendChild(a);
-
-    const b=document.createElement("option");
-    b.value=String(hour);
-    b.textContent=hourLabel(hour);
-    quietEnd.appendChild(b);
-  }
-
-  quietStart.value=localStorage.getItem("quietStart")||"22";
-  quietEnd.value=localStorage.getItem("quietEnd")||"7";
-  quietEnabled.checked=localStorage.getItem("quietEnabled")==="true";
+function renderQuietSchedules(){
+  quietSchedulesContainer.replaceChildren();
+  const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  quietSchedules.forEach((schedule,index)=>{
+    const details=document.createElement("details");
+    const summary=document.createElement("summary");
+    const refreshSummary=()=>{summary.textContent=(schedule.name||"Quiet schedule")+" · "+(schedule.enabled?schedule.start+"–"+schedule.end:"Off");};
+    refreshSummary();details.appendChild(summary);
+    details.addEventListener("change",refreshSummary);
+    const card=document.createElement("fieldset");card.className="quiet-card";
+    const legend=document.createElement("legend");legend.textContent=schedule.name||"Quiet schedule";card.appendChild(legend);
+    function field(labelText,input){
+      const label=document.createElement("label");label.textContent=labelText;label.appendChild(input);card.appendChild(label);
+    }
+    const name=document.createElement("input");name.type="text";name.value=schedule.name;name.maxLength=40;
+    name.addEventListener("change",()=>{schedule.name=name.value.trim()||"Quiet schedule";legend.textContent=schedule.name;saveQuietSettings();});field("Name",name);
+    const toggle=document.createElement("input");toggle.type="checkbox";toggle.checked=schedule.enabled;
+    toggle.addEventListener("change",()=>{schedule.enabled=toggle.checked;saveQuietSettings();});field("Enabled ",toggle);
+    for(const [key,label] of [["start","Quiet from"],["end","Resume at"]]){
+      const input=document.createElement("input");input.type="time";input.value=schedule[key];input.required=true;
+      input.addEventListener("change",()=>{if(QuietSchedules.minutes(input.value)===null){input.value=schedule[key];return;}schedule[key]=input.value;saveQuietSettings();});field(label,input);
+    }
+    const days=document.createElement("div");days.className="quiet-days";
+    dayNames.forEach((name,day)=>{
+      const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=schedule.days.includes(day);
+      input.addEventListener("change",()=>{schedule.days=input.checked?[...schedule.days,day]:schedule.days.filter(d=>d!==day);saveQuietSettings();});
+      label.appendChild(input);label.appendChild(document.createTextNode(name));days.appendChild(label);
+    });card.appendChild(days);
+    const remove=document.createElement("button");remove.type="button";remove.textContent="Remove schedule";
+    remove.addEventListener("click",()=>{quietSchedules.splice(index,1);renderQuietSchedules();saveQuietSettings();});card.appendChild(remove);
+    details.appendChild(card);quietSchedulesContainer.appendChild(details);
+  });
 }
-
-function isQuietTime(now){
-  if(!quietEnabled.checked)return false;
-
-  const start=Number(quietStart.value);
-  const end=Number(quietEnd.value);
-  const hour=now.getHours();
-
-  // Same start/end means quiet all day.
-  if(start===end)return true;
-
-  // Daytime range, such as 8 AM to 5 PM.
-  if(start<end)return hour>=start && hour<end;
-
-  // Overnight range, such as 10 PM to 8 AM.
-  return hour>=start || hour<end;
+function isQuietTime(now){return QuietSchedules.isQuiet(quietSchedules,now);}
+function stopAllAudio(){
+  stopPreview();
+  if(audioContext&&audioContext.state!=="closed")audioContext.close().catch(()=>{});
+  audioContext=null;masterGain=null;
 }
 
 function applyQuietState(now){
@@ -852,30 +802,21 @@ function applyQuietState(now){
     testButton.style.cursor="not-allowed";
 
     quietStatus.textContent=
-      "QUIET NOW — audio engine OFF until "+
-      hourLabel(Number(quietEnd.value))+".";
+      "QUIET NOW — all alerts paused: "+quietSchedules.filter(s=>QuietSchedules.active(s,now)).map(s=>s.name).join(", ")+".";
   }else{
     testButton.disabled=false;
     testButton.style.opacity="";
     testButton.style.cursor="";
 
-    if(!quietEnabled.checked){
-      quietStatus.textContent="Quiet Hours are OFF.";
-    }else{
-      quietStatus.textContent=
-        "Quiet Hours set for "+hourLabel(Number(quietStart.value))+
-        " to "+hourLabel(Number(quietEnd.value))+".";
-    }
+    const count=quietSchedules.filter(s=>s.enabled&&s.days.length).length;
+    quietStatus.textContent=count?count+" quiet schedule(s) enabled. No quiet period active now.":"Quiet Hours are OFF.";
   }
 
   return quiet;
 }
 
 async function saveQuietSettings(){
-  localStorage.setItem("quietEnabled",String(quietEnabled.checked));
-  localStorage.setItem("quietStart",quietStart.value);
-  localStorage.setItem("quietEnd",quietEnd.value);
-
+  localStorage.setItem("quietSchedulesV1",JSON.stringify(quietSchedules));
   applyQuietState(new Date());
   updateDescription();
 
@@ -885,7 +826,7 @@ async function saveQuietSettings(){
   if(enabled){
     await syncLockedPhoneChimes();
   }else{
-    await cancelAllLockedChimes();
+    await syncLockedPhoneChimes();
   }
 }
 
@@ -966,14 +907,11 @@ function updateDescription(){
     if(getStyle()==="ship")scheduleNote.textContent+=" Watch bells count 1–8 at the hour and half-hour; quarter-hours use one bell.";
   }
 
-  if(quietEnabled.checked){
-    scheduleNote.textContent += " Quiet Hours: "+
-      hourLabel(Number(quietStart.value))+" to "+
-      hourLabel(Number(quietEnd.value))+".";
-  }
+  const count=quietSchedules.filter(s=>s.enabled&&s.days.length).length;
+  if(count)scheduleNote.textContent+=" "+count+" quiet schedule(s) enabled.";
 
   statusDisplay.textContent=
-    getName()+" selected. Press Start Chimes.";
+    getName()+" selected.";
 }
 
 startButton.addEventListener("click",async ()=>{
@@ -1030,7 +968,8 @@ testButton.addEventListener("click",()=>{
 stopButton.addEventListener("click",async ()=>{
   enabled=false;
   localStorage.setItem("chimesEnabled","false");
-  await cancelAllLockedChimes();
+  stopAllAudio();
+  await syncLockedPhoneChimes();
 
   if(audioContext && audioContext.state!=="closed"){
     try{ await audioContext.close(); }catch(e){}
@@ -1053,7 +992,7 @@ muteButton.addEventListener("click",async ()=>{
   muted=!muted;
   muteButton.textContent=muted?"Unmute":"Mute";
 
-  masterGain.gain.setValueAtTime(
+  if(masterGain&&audioContext)masterGain.gain.setValueAtTime(
     getNormalVolume(),
     audioContext.currentTime
   );
@@ -1081,9 +1020,11 @@ scheduleChoice.addEventListener("change",async ()=>{
   updateDescription();
   if(enabled)await syncLockedPhoneChimes();
 });
-quietEnabled.addEventListener("change",saveQuietSettings);
-quietStart.addEventListener("change",saveQuietSettings);
-quietEnd.addEventListener("change",saveQuietSettings);
+$("addQuietSchedule").addEventListener("click",()=>{
+  quietSchedules.push({name:"Quiet schedule",enabled:false,start:"22:00",end:"07:00",days:[0,1,2,3,4,5,6]});
+  renderQuietSchedules();saveQuietSettings();
+});
+
 
 volumeSlider.addEventListener("input",()=>{
   volumeValue.textContent=volumeSlider.value;
@@ -1098,7 +1039,7 @@ volumeSlider.addEventListener("input",()=>{
   }
 });
 
-fillQuietTimes();
+renderQuietSchedules();
 updateDescription();
 applyQuietState(new Date());
 updateClock();
@@ -1110,7 +1051,7 @@ updateClock();
   if(enabled){
     await syncLockedPhoneChimes();
   }else{
-    await cancelAllLockedChimes();
+    await syncLockedPhoneChimes();
   }
 })();
 
@@ -1121,7 +1062,7 @@ document.addEventListener("visibilitychange",async ()=>{
     if(enabled){
       await syncLockedPhoneChimes();
     }else{
-      await cancelAllLockedChimes();
+      await syncLockedPhoneChimes();
     }
   }
 });
@@ -1132,7 +1073,7 @@ window.addEventListener("focus",async ()=>{
   if(enabled){
     await syncLockedPhoneChimes();
   }else{
-    await cancelAllLockedChimes();
+    await syncLockedPhoneChimes();
   }
 });
 
