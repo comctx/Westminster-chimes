@@ -149,6 +149,21 @@ h2{font-size:21px;margin:0}
   line-height:1.5;
 }
 
+.background-chime-box{
+  margin:14px 0 6px;
+  padding:13px 14px;
+  border:1px solid #596982;
+  border-radius:12px;
+  text-align:left;
+  background:rgba(255,255,255,.04);
+  color:#d6deea;
+  font-size:14px;
+  line-height:1.45;
+}
+.background-chime-box strong{color:#f3cf62}
+.background-chime-box .ok{color:#8ee6a7}
+.background-chime-box .warn{color:#ffd37a}
+
 @media(max-width:420px){
   .buttons{grid-template-columns:1fr}
   h1{font-size:31px}
@@ -218,6 +233,16 @@ h2{font-size:21px;margin:0}
   </div>
 
   <p id="scheduleCoverage" class="note" role="status"></p>
+
+  <div class="background-chime-box" id="backgroundChimeBox" role="status">
+    <strong>Background Chimes: <span id="backgroundChimeState">Checking…</span></strong>
+    <div id="backgroundChimeHelp">
+      Chimes can play normally while this app is open. For chimes when the iPhone is locked or the app is in the background,
+      iOS requires notification sound permission. Keep <b>Allow Notifications</b> and <b>Sounds</b> ON.
+      You can turn off Lock Screen, Notification Center, and Banners if you do not want visible alerts.
+    </div>
+  </div>
+
   <div id="status">Press Start Chimes to begin.</div>
 
   <div class="buttons">
@@ -303,6 +328,34 @@ function getLocalNotifications(){
   }
 }
 
+function setBackgroundChimeState(state,message){
+  const el=$("backgroundChimeState");
+  if(!el)return;
+  el.textContent=message;
+  el.className=state==="ok"?"ok":state==="warn"?"warn":"";
+}
+
+async function refreshBackgroundChimeState(){
+  const LN=getLocalNotifications();
+  if(!LN){
+    setBackgroundChimeState("","Available on iPhone");
+    return false;
+  }
+
+  try{
+    const perm=await LN.checkPermissions();
+    const granted=!!perm&&perm.display==="granted";
+    setBackgroundChimeState(
+      granted?"ok":"warn",
+      granted?"Ready":"Needs iPhone permission"
+    );
+    return granted;
+  }catch(e){
+    setBackgroundChimeState("warn","Could not check permission");
+    return false;
+  }
+}
+
 
 function lockedMinutes(){
   if(scheduleChoice.value==="hourly")return [0];
@@ -346,27 +399,38 @@ async function cancelAllLockedChimes(){
 
 
 let scheduleQueue=Promise.resolve();
-function syncLockedPhoneChimes(){
-  scheduleQueue=scheduleQueue.catch(()=>false).then(rebuildLockedPhoneChimes);
+function syncLockedPhoneChimes(requestPermission=false){
+  scheduleQueue=scheduleQueue
+    .catch(()=>false)
+    .then(()=>rebuildLockedPhoneChimes(requestPermission));
   return scheduleQueue;
 }
-async function rebuildLockedPhoneChimes(){
+async function rebuildLockedPhoneChimes(requestPermission=false){
   const LN=getLocalNotifications();
   if(!LN)return false;
 
   try{
     if(!await cancelAllLockedChimes())throw new Error("Could not clear previous alerts");
-    if(!enabled || muted){$("scheduleCoverage").textContent="";return true;}
+    if(!enabled || muted){
+      $("scheduleCoverage").textContent="";
+      await refreshBackgroundChimeState();
+      return true;
+    }
+
     let perm=await LN.checkPermissions();
-    if(!perm || perm.display!=="granted"){
+    if(requestPermission&&(!perm || perm.display!=="granted")){
       perm=await LN.requestPermissions();
     }
 
     if(!perm || perm.display!=="granted"){
       console.warn("Notification permission not granted.");
-      $("scheduleCoverage").textContent="Notifications are disabled. Allow notifications in iPhone Settings for locked-screen chimes.";
+      setBackgroundChimeState("warn","Needs iPhone permission");
+      $("scheduleCoverage").textContent=
+        "Chimes will still work while Clock Chimes Plus is open. For background or locked-screen chimes, turn on Allow Notifications and Sounds in iPhone Settings.";
       return false;
     }
+
+    setBackgroundChimeState("ok","Ready");
 
     const plan=isFocus()
       ?{kind:"rolling",times:FocusIntervals.nextTimes(focusAnchor,focusInterval.value,64,isQuietTime)}
@@ -988,9 +1052,10 @@ startButton.addEventListener("click",async ()=>{
   muted=false;
   muteButton.textContent="Mute";
 
-  // Always rebuild the iPhone lock-screen schedule. This first clears
-  // any older scheduled notifications that did not obey Quiet Hours.
-  await syncLockedPhoneChimes();
+  // Ask for iPhone notification sound permission only when the user
+  // explicitly starts chimes. Background/locked-screen sounds require it,
+  // but foreground chimes remain independent and keep working.
+  const backgroundReady=await syncLockedPhoneChimes(true);
 
   if(applyQuietState(new Date())){
     statusDisplay.textContent=
@@ -999,7 +1064,15 @@ startButton.addEventListener("click",async ()=>{
   }
 
   prepareAudio();
-  statusDisplay.textContent=isFocus()?"Focus started — chimes every "+focusInterval.value+" minutes.":getName()+" is on.";
+  if(backgroundReady){
+    statusDisplay.textContent=isFocus()
+      ?"Focus started — chimes every "+focusInterval.value+" minutes."
+      :getName()+" is on.";
+  }else{
+    statusDisplay.textContent=isFocus()
+      ?"Focus is on while the app is open. Turn on iPhone Notifications + Sounds for background focus chimes."
+      :getName()+" is on while the app is open. Turn on iPhone Notifications + Sounds for background chimes.";
+  }
 });
 
 testButton.addEventListener("click",()=>{
@@ -1123,6 +1196,7 @@ renderQuietSchedules();
 updateDescription();
 applyQuietState(new Date());
 updateClock();
+refreshBackgroundChimeState();
 
 // FIX v4: reconcile native scheduled chimes every time the app starts.
 // This clears stale notifications from an older build/session and rebuilds
