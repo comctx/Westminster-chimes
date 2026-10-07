@@ -238,7 +238,7 @@ workflows:
           project.save
           RUBY
 
-          CHIMES_BUILD_NUMBER=21
+          CHIMES_BUILD_NUMBER=22
 
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
 
