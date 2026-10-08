@@ -51,6 +51,21 @@ workflows:
           npx cap add ios
           npx cap sync ios
 
+          # Apple requires iOS 15.0+ for App Store uploads beginning April 2027.
+          # Set the generated Capacitor project's deployment target explicitly.
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/App/App.xcodeproj/project.pbxproj
+
+          # Also keep CocoaPods aligned with the app deployment target.
+          if [ -f ios/App/Podfile ]; then
+            if grep -q "^platform :ios" ios/App/Podfile; then
+              sed -i '' "s/^platform :ios.*/platform :ios, '15.0'/" ios/App/Podfile
+            else
+              sed -i '' "1s/^/platform :ios, '15.0'\\n/" ios/App/Podfile
+            fi
+          fi
+
+          grep "IPHONEOS_DEPLOYMENT_TARGET" ios/App/App.xcodeproj/project.pbxproj | head
+
       - name: Add Clock Chimes Plus app icon
         script: |
           set -eu
