@@ -225,6 +225,15 @@ workflows:
 
           abort 'App target not found' unless target
 
+          # Explicitly support current iPhones while avoiding an ambiguous old minimum.
+          minimum_ios = '15.0'
+          project.build_configurations.each do |config|
+            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_ios
+          end
+          target.build_configurations.each do |config|
+            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_ios
+          end
+
           group = project.main_group.new_group('ChimeSounds', 'ChimeSounds')
           files = Dir.glob('ios/App/ChimeSounds/*.wav').sort
 
@@ -238,7 +247,7 @@ workflows:
           project.save
           RUBY
 
-          CHIMES_BUILD_NUMBER=22
+          CHIMES_BUILD_NUMBER=23
 
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CHIMES_BUILD_NUMBER" ios/App/App/Info.plist
 
@@ -289,6 +298,11 @@ workflows:
               assert metadata['CFBundleIdentifier'] == 'com.donaldreckman.westminsterchimes'
               assert int(metadata['CFBundleVersion']) > 1
               assert metadata['CFBundleDisplayName'] == 'Clock Chimes Plus'
+              minimum_os = metadata.get('MinimumOSVersion')
+              assert minimum_os is not None, 'MinimumOSVersion missing from finished app'
+              assert tuple(map(int, minimum_os.split('.')[:2])) >= (15, 0), (
+                  f'Expected iOS 15.0 or later, got {minimum_os}'
+              )
 
               sounds = list(Path('www/sounds').glob('*.wav'))
               assert len(sounds) == 385
